@@ -1,0 +1,407 @@
+// SVG ICONS
+const IC = {
+    users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    key: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>',
+    chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+    edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>',
+    play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+    refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>',
+    log: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+    inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
+    arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',
+    bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+    send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+};
+
+const App = {
+    currentPage: 'dashboard',
+    _apiKey: null,
+
+    init() {
+        if (!Auth.requireAuth()) return;
+        this.setupNav();
+        this.setupAdminInfo();
+        this.navigate(location.hash.slice(1) || 'dashboard');
+    },
+
+    setupNav() {
+        document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+            item.addEventListener('click', (e) => { e.preventDefault(); this.navigate(item.dataset.page); });
+        });
+        document.getElementById('logoutBtn')?.addEventListener('click', (e) => { e.preventDefault(); Auth.logout(); });
+    },
+
+    setupAdminInfo() {
+        const u = Auth.getUsername() || 'Admin';
+        const el = document.getElementById('adminName');
+        const av = document.getElementById('adminAvatar');
+        if (el) el.textContent = u;
+        if (av) av.textContent = u.charAt(0).toUpperCase();
+    },
+
+    navigate(page) {
+        this.currentPage = page;
+        location.hash = page;
+        document.querySelectorAll('.nav-item[data-page]').forEach(i => i.classList.toggle('active', i.dataset.page === page));
+        const titles = { dashboard: ['Dashboard','Overview sistem API kamu'], apikeys: ['API Keys','Kelola kunci akses API'], logs: ['Request Logs','Riwayat request API terbaru'], notification: ['Notifikasi','Konfigurasi notifikasi Telegram / WhatsApp'] };
+        const [t, s] = titles[page] || titles.dashboard;
+        document.getElementById('pageTitle').textContent = t;
+        document.getElementById('pageSubtitle').textContent = s;
+        document.getElementById('headerActions').innerHTML = '';
+        document.getElementById('mainBody').innerHTML = '<div class="page-content" id="pageContent"></div>';
+        const r = { dashboard: () => this.renderDashboard(), apikeys: () => this.renderApiKeys(), logs: () => this.renderLogs(), notification: () => this.renderNotification() };
+        (r[page] || r.dashboard)();
+    },
+
+    // DASHBOARD
+    async renderDashboard() {
+        const el = document.getElementById('pageContent');
+        el.innerHTML = `<div class="stats-grid">${'<div class="stat-card"><div class="skeleton" style="height:80px"></div></div>'.repeat(4)}</div>`;
+        const res = await Auth.apiFetch('/api/admin/stats');
+        if (!res?.success) return;
+        const s = res.data;
+        el.innerHTML = `
+        <div class="stats-grid page-content">
+            <div class="stat-card"><div class="stat-icon">${IC.users}</div><div class="stat-label">Total Users</div><div class="stat-value">${s.totalUsers}</div><div class="stat-sub">Pengguna terdaftar</div></div>
+            <div class="stat-card"><div class="stat-icon">${IC.key}</div><div class="stat-label">API Keys</div><div class="stat-value">${s.activeApiKeys}<span style="font-size:14px;color:var(--text-muted)">/${s.totalApiKeys}</span></div><div class="stat-sub">Aktif / total</div></div>
+            <div class="stat-card"><div class="stat-icon">${IC.chart}</div><div class="stat-label">Total Requests</div><div class="stat-value">${s.totalRequests}</div><div class="stat-sub">Request tercatat</div></div>
+            <div class="stat-card"><div class="stat-icon">${IC.clock}</div><div class="stat-label">Uptime</div><div class="stat-value" style="font-size:22px">${this.fmtUp(s.serverUptime)}</div><div class="stat-sub">Server aktif</div></div>
+        </div>
+        <div class="table-container">
+            <div class="table-header"><span class="table-title">${IC.log} Request Terbaru</span><button class="btn btn-secondary btn-sm" onclick="App.navigate('logs')">${IC.arrow} Lihat Semua</button></div>
+            <div id="dashLogs"><div class="skeleton" style="height:160px;margin:16px"></div></div>
+        </div>`;
+        const lr = await Auth.apiFetch('/api/admin/logs?limit=5');
+        const dl = document.getElementById('dashLogs');
+        if (lr?.success && lr.data.length > 0) {
+            dl.innerHTML = `<table><thead><tr><th>Waktu</th><th>Method</th><th>Path</th><th>Key</th></tr></thead><tbody>${lr.data.map(l => `<tr><td style="font-size:12px;color:var(--text-muted)">${this.fmtT(l.timestamp)}</td><td><span class="method method-${(l.method||'get').toLowerCase()}">${l.method}</span></td><td class="mono">${l.path}</td><td><span class="badge badge-purple">${l.apiKeyLabel||'-'}</span></td></tr>`).join('')}</tbody></table>`;
+        } else {
+            dl.innerHTML = `<div class="empty-state">${IC.inbox}<p>Belum ada request log.</p></div>`;
+        }
+    },
+
+    // API KEYS
+    async renderApiKeys() {
+        const el = document.getElementById('pageContent');
+        document.getElementById('headerActions').innerHTML = `<button class="btn btn-primary" onclick="App.showCreateKeyModal()">${IC.plus} Buat Key Baru</button>`;
+        el.innerHTML = '<div class="table-container"><div class="skeleton" style="height:200px;margin:16px"></div></div>';
+        const res = await Auth.apiFetch('/api/admin/keys');
+        if (!res?.success) return;
+        if (res.data.length === 0) {
+            el.innerHTML = `<div class="table-container"><div class="empty-state">${IC.key}<p>Belum ada API key. Buat key pertamamu!</p></div></div>`;
+            return;
+        }
+        // Simpan data keys untuk edit modal
+        this._keysData = res.data;
+        el.innerHTML = `<div class="table-container page-content"><table><thead><tr><th>Label</th><th>Key</th><th>Status</th><th>Expired</th><th>Rate Limit</th><th>Penggunaan</th><th>Aksi</th></tr></thead><tbody>${res.data.map(k => {
+            const expText = k.expiredDays > 0 ? (k.isExpired ? `<span class="badge badge-red">Expired</span>` : `${k.expiredDays} hari`) : '<span class="badge badge-green">Unlimited</span>';
+            const rlText = k.rateLimit > 0 ? `${k.rateLimit}/hari` : '<span class="badge badge-green">Unlimited</span>';
+            return `<tr>
+                <td style="font-weight:600">${k.label}</td>
+                <td><span class="key-text" title="${k.key}">${k.key}</span></td>
+                <td><span class="badge ${k.active && !k.isExpired ? 'badge-green' : 'badge-red'}">${k.active && !k.isExpired ? 'Aktif' : k.isExpired ? 'Expired' : 'Nonaktif'}</span></td>
+                <td style="font-size:12px">${expText}</td>
+                <td style="font-size:12px">${rlText}</td>
+                <td>${k.usageCount}x</td>
+                <td style="white-space:nowrap">
+                    <button class="btn btn-secondary btn-sm" onclick="App.copyKey('${k.key}')" title="Copy">${IC.copy}</button>
+                    <button class="btn btn-secondary btn-sm" onclick="App.showEditKeyModal('${k.id}')" title="Edit">${IC.edit}</button>
+                    <button class="btn btn-secondary btn-sm" onclick="App.toggleKey('${k.id}')" title="${k.active?'Nonaktifkan':'Aktifkan'}">${k.active ? IC.pause : IC.play}</button>
+                    <button class="btn btn-danger btn-sm" onclick="App.deleteKey('${k.id}','${k.label}')" title="Hapus">${IC.trash}</button>
+                </td></tr>`;
+        }).join('')}</tbody></table></div>`;
+    },
+
+    showCreateKeyModal() {
+        this.showModal('Buat API Key Baru', `
+            <div class="form-group"><label class="form-label">Nama API Key</label><input class="form-input" id="keyLabel" placeholder="Contoh: Production Key" autofocus></div>
+            <div class="form-group"><label class="form-label">Custom Key <span style="color:var(--text-muted);font-weight:400;text-transform:none">(opsional)</span></label><input class="form-input" id="keyCustom" placeholder="Kosongkan untuk auto-generate (sk-xxx...)" style="font-family:var(--font-mono);font-size:12px"><div class="form-hint">Minimal 8 karakter. Kosongkan untuk generate otomatis.</div></div>
+            <div class="form-row">
+                <div class="form-group"><label class="form-label">Expired (Hari)</label><input class="form-input" id="keyExpired" type="number" min="0" value="0" placeholder="0"><div class="form-hint">0 = tidak pernah expired</div></div>
+                <div class="form-group"><label class="form-label">Rate Limit / Hari</label><input class="form-input" id="keyRateLimit" type="number" min="0" value="1000" placeholder="1000"><div class="form-hint">0 = unlimited</div></div>
+            </div>`, async () => {
+            const label = document.getElementById('keyLabel').value.trim();
+            const customKey = document.getElementById('keyCustom').value.trim();
+            const expiredDays = parseInt(document.getElementById('keyExpired').value) || 0;
+            const rateLimit = parseInt(document.getElementById('keyRateLimit').value) || 0;
+            if (!label) return Toast.error('Nama API Key wajib diisi!');
+            if (customKey && customKey.length < 8) return Toast.error('Custom key minimal 8 karakter!');
+            const res = await Auth.apiFetch('/api/admin/keys', { method: 'POST', body: JSON.stringify({ label, customKey: customKey || undefined, expiredDays, rateLimit }) });
+            if (res?.success) { Toast.success('API Key berhasil dibuat!'); this.closeModal(); this.renderApiKeys(); }
+            else Toast.error(res?.message || 'Gagal');
+        });
+    },
+
+    showEditKeyModal(id) {
+        const k = this._keysData?.find(x => x.id === id);
+        if (!k) return Toast.error('Data key tidak ditemukan.');
+        this.showModal('Edit API Key', `
+            <div class="form-group"><label class="form-label">Nama API Key</label><input class="form-input" id="keyLabel" value="${k.label}"></div>
+            <div class="form-group"><label class="form-label">API Key Value</label><input class="form-input" id="keyCustom" value="${k.key}" style="font-family:var(--font-mono);font-size:12px"><div class="form-hint">Minimal 8 karakter. Hati-hati mengubah key yang sudah dipakai.</div></div>
+            <div class="form-row">
+                <div class="form-group"><label class="form-label">Expired (Hari)</label><input class="form-input" id="keyExpired" type="number" min="0" value="${k.expiredDays || 0}"><div class="form-hint">0 = tidak pernah expired</div></div>
+                <div class="form-group"><label class="form-label">Rate Limit / Hari</label><input class="form-input" id="keyRateLimit" type="number" min="0" value="${k.rateLimit || 0}"><div class="form-hint">0 = unlimited</div></div>
+            </div>`, async () => {
+            const label = document.getElementById('keyLabel').value.trim();
+            const customKey = document.getElementById('keyCustom').value.trim();
+            const expiredDays = parseInt(document.getElementById('keyExpired').value) || 0;
+            const rateLimit = parseInt(document.getElementById('keyRateLimit').value) || 0;
+            if (!label) return Toast.error('Nama wajib diisi!');
+            if (customKey.length < 8) return Toast.error('Key minimal 8 karakter!');
+            const res = await Auth.apiFetch(`/api/admin/keys/${id}`, { method: 'PUT', body: JSON.stringify({ label, customKey, expiredDays, rateLimit }) });
+            if (res?.success) { Toast.success('API Key berhasil diupdate!'); this.closeModal(); this.renderApiKeys(); }
+            else Toast.error(res?.message || 'Gagal update');
+        });
+    },
+
+    async copyKey(key) { await navigator.clipboard.writeText(key); Toast.success('API Key disalin!'); },
+    async toggleKey(id) { const r = await Auth.apiFetch(`/api/admin/keys/${id}/revoke`, { method: 'PATCH' }); if (r?.success) { Toast.success(r.message); this.renderApiKeys(); } },
+    async deleteKey(id, label) { if (!confirm(`Hapus API Key "${label}"?`)) return; const r = await Auth.apiFetch(`/api/admin/keys/${id}`, { method: 'DELETE' }); if (r?.success) { Toast.success('Key dihapus!'); this.renderApiKeys(); } },
+
+    // USERS
+    async renderUsers() {
+        const el = document.getElementById('pageContent');
+        document.getElementById('headerActions').innerHTML = `<button class="btn btn-primary" onclick="App.showCreateUserModal()">${IC.plus} Tambah User</button>`;
+        el.innerHTML = '<div class="table-container"><div class="skeleton" style="height:200px;margin:16px"></div></div>';
+        const keysRes = await Auth.apiFetch('/api/admin/keys');
+        const activeKey = keysRes?.data?.find(k => k.active);
+        if (!activeKey) { el.innerHTML = `<div class="table-container"><div class="empty-state">${IC.key}<p>Buat API Key aktif terlebih dahulu.</p></div></div>`; return; }
+        this._apiKey = activeKey.key;
+        const res = await fetch('/api/users', { headers: { 'x-api-key': activeKey.key } });
+        const data = await res.json();
+        if (!data.success || !data.data.length) { el.innerHTML = `<div class="table-container"><div class="empty-state">${IC.users}<p>Belum ada user terdaftar.</p></div></div>`; return; }
+        el.innerHTML = `<div class="table-container page-content"><table><thead><tr><th>ID</th><th>Nama</th><th>Role</th><th>Dibuat</th><th>Aksi</th></tr></thead><tbody>${data.data.map(u => `<tr>
+            <td class="mono">#${u.id}</td><td style="font-weight:600">${u.name}</td>
+            <td><span class="badge ${u.role==='Admin'?'badge-purple':'badge-blue'}">${u.role}</span></td>
+            <td style="font-size:12px;color:var(--text-muted)">${this.fmtT(u.createdAt)}</td>
+            <td style="white-space:nowrap"><button class="btn btn-secondary btn-sm" onclick="App.showEditUserModal(${u.id},'${u.name.replace(/'/g,"\\'")}','${u.role}')">${IC.edit}</button> <button class="btn btn-danger btn-sm" onclick="App.deleteUser(${u.id},'${u.name.replace(/'/g,"\\'")}')">${IC.trash}</button></td>
+        </tr>`).join('')}</tbody></table></div>`;
+    },
+
+    showCreateUserModal() {
+        this.showModal('Tambah User Baru', `
+            <div class="form-group"><label class="form-label">Nama</label><input class="form-input" id="userName" placeholder="Nama lengkap" autofocus></div>
+            <div class="form-group"><label class="form-label">Role</label><input class="form-input" id="userRole" placeholder="Admin / User / Editor"></div>`, async () => {
+            const name = document.getElementById('userName').value.trim();
+            const role = document.getElementById('userRole').value.trim();
+            if (!name || !role) return Toast.error('Semua field wajib diisi!');
+            const res = await fetch('/api/users', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': this._apiKey }, body: JSON.stringify({ name, role }) });
+            const d = await res.json();
+            if (d.success) { Toast.success('User ditambahkan!'); this.closeModal(); this.renderUsers(); } else Toast.error(d.message);
+        });
+    },
+
+    showEditUserModal(id, name, role) {
+        this.showModal('Edit User', `
+            <div class="form-group"><label class="form-label">Nama</label><input class="form-input" id="userName" value="${name}"></div>
+            <div class="form-group"><label class="form-label">Role</label><input class="form-input" id="userRole" value="${role}"></div>`, async () => {
+            const res = await fetch(`/api/users/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'x-api-key': this._apiKey }, body: JSON.stringify({ name: document.getElementById('userName').value.trim(), role: document.getElementById('userRole').value.trim() }) });
+            const d = await res.json();
+            if (d.success) { Toast.success('User diupdate!'); this.closeModal(); this.renderUsers(); } else Toast.error(d.message);
+        });
+    },
+
+    async deleteUser(id, name) {
+        if (!confirm(`Hapus user "${name}"?`)) return;
+        const res = await fetch(`/api/users/${id}`, { method: 'DELETE', headers: { 'x-api-key': this._apiKey } });
+        const d = await res.json();
+        if (d.success) { Toast.success('User dihapus!'); this.renderUsers(); }
+    },
+
+    // LOGS
+    async renderLogs() {
+        const el = document.getElementById('pageContent');
+        document.getElementById('headerActions').innerHTML = `<button class="btn btn-secondary" onclick="App.renderLogs()">${IC.refresh} Refresh</button>`;
+        el.innerHTML = '<div class="table-container"><div class="skeleton" style="height:300px;margin:16px"></div></div>';
+        const res = await Auth.apiFetch('/api/admin/logs?limit=100');
+        if (!res?.success || !res.data.length) { el.innerHTML = `<div class="table-container"><div class="empty-state">${IC.inbox}<p>Belum ada request log.</p></div></div>`; return; }
+        el.innerHTML = `<div class="table-container page-content"><div class="table-header"><span class="table-title">${IC.log} ${res.data.length} log terbaru</span></div>
+            <table><thead><tr><th>Waktu</th><th>Method</th><th>Path</th><th>API Key</th><th>IP</th></tr></thead><tbody>${res.data.map(l => `<tr>
+            <td style="font-size:12px;color:var(--text-muted)">${this.fmtT(l.timestamp)}</td>
+            <td><span class="method method-${(l.method||'get').toLowerCase()}">${l.method}</span></td>
+            <td class="mono">${l.path}</td>
+            <td><span class="badge badge-purple">${l.apiKeyLabel||'-'}</span></td>
+            <td style="font-size:12px;color:var(--text-muted)">${l.ip||'-'}</td>
+        </tr>`).join('')}</tbody></table></div>`;
+    },
+
+    // MODAL
+    showModal(title, content, onConfirm) {
+        const ov = document.getElementById('modalOverlay');
+        document.getElementById('modalTitle').textContent = title;
+        document.getElementById('modalBody').innerHTML = content;
+        this._modalConfirm = onConfirm;
+        ov.classList.add('active');
+        setTimeout(() => ov.querySelector('input')?.focus(), 100);
+    },
+    closeModal() { document.getElementById('modalOverlay').classList.remove('active'); },
+    confirmModal() { if (this._modalConfirm) this._modalConfirm(); },
+
+    // UTILS
+    fmtT(iso) {
+        if (!iso) return '-';
+        const d = new Date(iso);
+        return d.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' }) + ' ' + d.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+    },
+    fmtUp(s) {
+        const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+        if (h > 0) return `${h}j ${m}m`;
+        if (m > 0) return `${m}m ${sec}d`;
+        return `${sec}d`;
+    },
+
+    // NOTIFICATION SETTINGS
+    async renderNotification() {
+        const el = document.getElementById('pageContent');
+        el.innerHTML = '<div class="table-container"><div class="skeleton" style="height:300px;margin:16px"></div></div>';
+
+        const res = await Auth.apiFetch('/api/admin/notification-settings');
+        const settings = res?.data || { enabled: false, telegram: { enabled: false, botToken: '', chatId: '' } };
+
+        el.innerHTML = `
+        <div class="page-content">
+            <div class="table-container" style="margin-bottom:20px">
+                <div class="table-header">
+                    <span class="table-title">${IC.bell} Pengaturan Notifikasi</span>
+                </div>
+                <div style="padding:20px">
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;margin-bottom:16px">
+                        <div>
+                            <div style="font-weight:600;margin-bottom:4px">Aktifkan Notifikasi</div>
+                            <div style="font-size:13px;color:var(--text-muted)">Kirim notifikasi setiap ada request API masuk</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="notifEnabled" ${settings.enabled ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container" style="margin-bottom:20px">
+                <div class="table-header">
+                    <span class="table-title">${IC.send} Telegram Bot</span>
+                    <span class="badge ${settings.telegram?.enabled ? 'badge-green' : 'badge-red'}" style="margin-left:8px">${settings.telegram?.enabled ? 'Aktif' : 'Nonaktif'}</span>
+                </div>
+                <div style="padding:20px">
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;margin-bottom:20px">
+                        <div>
+                            <div style="font-weight:600;margin-bottom:4px">Aktifkan Telegram</div>
+                            <div style="font-size:13px;color:var(--text-muted)">Kirim log request ke bot Telegram</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="telegramEnabled" ${settings.telegram?.enabled ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:16px">
+                        <label class="form-label">Bot Token</label>
+                        <input class="form-input" id="telegramBotToken" type="text" placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz" value="${settings.telegram?.botToken || ''}" style="font-family:var(--font-mono);font-size:12px">
+                        <div class="form-hint">Dapatkan dari <a href="https://t.me/BotFather" target="_blank" style="color:var(--primary)">@BotFather</a> di Telegram</div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:20px">
+                        <label class="form-label">Chat ID</label>
+                        <input class="form-input" id="telegramChatId" type="text" placeholder="-1001234567890 atau 123456789" value="${settings.telegram?.chatId || ''}" style="font-family:var(--font-mono);font-size:12px">
+                        <div class="form-hint">Chat ID user/group. Gunakan <a href="https://t.me/userinfobot" target="_blank" style="color:var(--primary)">@userinfobot</a> untuk mengetahui ID</div>
+                    </div>
+
+                    <div style="display:flex;gap:10px">
+                        <button class="btn btn-secondary" onclick="App.testTelegram()" id="testTelegramBtn">${IC.send} Test Kirim</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+                <button class="btn btn-primary" onclick="App.saveNotificationSettings()" id="saveNotifBtn">${IC.check} Simpan Pengaturan</button>
+            </div>
+        </div>`;
+    },
+
+    async saveNotificationSettings() {
+        const btn = document.getElementById('saveNotifBtn');
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Menyimpan...';
+
+        try {
+            const payload = {
+                enabled: document.getElementById('notifEnabled').checked,
+                telegram: {
+                    enabled: document.getElementById('telegramEnabled').checked,
+                    botToken: document.getElementById('telegramBotToken').value.trim(),
+                    chatId: document.getElementById('telegramChatId').value.trim(),
+                },
+            };
+
+            const res = await Auth.apiFetch('/api/admin/notification-settings', {
+                method: 'PUT',
+                body: JSON.stringify(payload),
+            });
+
+            if (res?.success) {
+                Toast.success('Pengaturan notifikasi berhasil disimpan!');
+            } else {
+                Toast.error(res?.message || 'Gagal menyimpan pengaturan.');
+            }
+        } catch (err) {
+            Toast.error('Gagal menyimpan: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `${IC.check} Simpan Pengaturan`;
+        }
+    },
+
+    async testTelegram() {
+        const btn = document.getElementById('testTelegramBtn');
+        const botToken = document.getElementById('telegramBotToken').value.trim();
+        const chatId = document.getElementById('telegramChatId').value.trim();
+
+        if (!botToken || !chatId) {
+            return Toast.error('Bot Token dan Chat ID wajib diisi untuk test!');
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Mengirim...';
+
+        try {
+            const res = await Auth.apiFetch('/api/admin/notification-test', {
+                method: 'POST',
+                body: JSON.stringify({ botToken, chatId }),
+            });
+
+            if (res?.success) {
+                Toast.success('Test notifikasi berhasil! Cek Telegram kamu.');
+            } else {
+                Toast.error(res?.message || 'Gagal mengirim test notifikasi.');
+            }
+        } catch (err) {
+            Toast.error('Gagal: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `${IC.send} Test Kirim`;
+        }
+    }
+};
+
+const Toast = {
+    show(msg, type='info') {
+        const c = document.getElementById('toastContainer');
+        const t = document.createElement('div');
+        t.className = `toast toast-${type}`;
+        t.innerHTML = `<span>${msg}</span>`;
+        c.appendChild(t);
+        setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+    },
+    success(m) { this.show(m,'success'); },
+    error(m) { this.show(m,'error'); },
+    info(m) { this.show(m,'info'); }
+};
+
+document.addEventListener('DOMContentLoaded', () => App.init());
