@@ -224,15 +224,33 @@ tbody tr:last-child td { border-bottom: none; }
 .login-error { background: var(--red-dim); border: 1px solid rgba(239,68,68,0.2); color: var(--red); padding: 10px 14px; border-radius: var(--radius-xs); font-size: 13px; margin-bottom: 16px; display: none; }
 .login-btn { width: 100%; padding: 12px; font-size: 15px; margin-top: 8px; }
 
+/* REMOVE TAP HIGHLIGHT on all interactive elements */
+a, button, input, select, textarea, .nav-item, .btn, .stat-card {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    outline: none;
+}
+
+/* TABLE SCROLL on mobile */
+.table-scroll-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 /* RESPONSIVE */
 @media (max-width: 768px) {
     .sidebar { position: fixed; left: -280px; top: 0; bottom: 0; width: 260px; transition: left 0.3s ease; }
     .sidebar.open { left: 0; }
     .sidebar-overlay.open { display: block; }
-    .main-body { padding: 16px; }
+    .main-body { padding: 16px; padding-bottom: 80px; }
     .stats-grid { grid-template-columns: 1fr; }
     .main-header { padding: 16px; }
     .form-row { grid-template-columns: 1fr; }
+
+    /* Table horizontal scroll */
+    .table-container { overflow: visible; }
+    .table-container table { min-width: 700px; }
+    .table-scroll-wrapper { margin: 0 -1px; }
 }
 
 @media (min-width: 769px) {

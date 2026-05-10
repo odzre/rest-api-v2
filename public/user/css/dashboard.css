@@ -226,6 +226,8 @@ tbody tr:last-child td { border-bottom: none; }
 /* SETTINGS */
 .settings-section { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
 .settings-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+.settings-title svg { width: 20px; height: 20px; color: var(--accent-light); }
+.stat-value svg { width: 22px; height: 22px; display: inline; vertical-align: text-bottom; }
 
 /* LANDING PAGE */
 .landing-page { overflow-y: auto; height: 100vh; }
@@ -301,11 +303,33 @@ tbody tr:last-child td { border-bottom: none; }
 .cs-box-input button:hover { background: #20bd5a; }
 .cs-box-input button svg { width: 18px; height: 18px; }
 
+/* LANDING BURGER MENU */
+.landing-burger {
+    display: none; width: 40px; height: 40px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+    background: var(--bg-secondary); cursor: pointer; align-items: center; justify-content: center;
+    color: var(--text-secondary); padding: 0; transition: var(--transition);
+    -webkit-tap-highlight-color: transparent;
+}
+.landing-burger:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+/* REMOVE TAP HIGHLIGHT on all interactive elements */
+a, button, input, select, textarea, .nav-item, .btn, .stat-card, .feature-card, .plan-card {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    outline: none;
+}
+
+/* TABLE SCROLL on mobile */
+.table-scroll-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 @media (max-width: 768px) {
     .sidebar { position: fixed; left: -280px; top: 0; bottom: 0; width: 260px; transition: left 0.3s ease; }
     .sidebar.open { left: 0; }
     .sidebar-overlay.open { display: block; }
-    .main-body { padding: 16px; }
+    .main-body { padding: 16px; padding-bottom: 80px; }
     .stats-grid { grid-template-columns: 1fr 1fr; }
     .main-header { padding: 16px; }
     .form-row { grid-template-columns: 1fr; }
@@ -315,6 +339,22 @@ tbody tr:last-child td { border-bottom: none; }
     .landing-nav { padding: 14px 20px; }
     .plans-grid { grid-template-columns: 1fr; }
     .cs-box { width: 280px; right: -8px; }
+
+    /* Burger menu */
+    .landing-burger { display: flex; }
+    .landing-nav-links {
+        display: none; position: absolute; top: 100%; left: 0; right: 0;
+        background: var(--bg-secondary); border-bottom: 1px solid var(--border);
+        flex-direction: column; padding: 12px 20px; gap: 8px;
+        box-shadow: var(--shadow);
+    }
+    .landing-nav-links.open { display: flex; }
+    .landing-nav-links .btn { width: 100%; justify-content: center; }
+
+    /* Table horizontal scroll */
+    .table-container { overflow: visible; }
+    .table-container table { min-width: 600px; }
+    .table-scroll-wrapper { margin: 0 -1px; }
 }
 @media (min-width: 769px) {
     .hamburger-btn { display: none; }

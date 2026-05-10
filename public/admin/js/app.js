@@ -75,7 +75,7 @@ const App = {
         </div>
         <div class="table-container">
             <div class="table-header"><span class="table-title">${IC.log} Request Terbaru</span><button class="btn btn-secondary btn-sm" onclick="App.navigate('logs')">${IC.arrow} Lihat Semua</button></div>
-            <div id="dashLogs"><div class="skeleton" style="height:160px;margin:16px"></div></div>
+            <div class="table-scroll-wrapper" id="dashLogs"><div class="skeleton" style="height:160px;margin:16px"></div></div>
         </div>`;
         const lr = await Auth.apiFetch('/api/admin/logs?limit=5');
         const dl = document.getElementById('dashLogs');
@@ -99,7 +99,7 @@ const App = {
         }
         // Simpan data keys untuk edit modal
         this._keysData = res.data;
-        el.innerHTML = `<div class="table-container page-content"><table><thead><tr><th>Label</th><th>Key</th><th>Status</th><th>Expired</th><th>Rate Limit</th><th>Penggunaan</th><th>Aksi</th></tr></thead><tbody>${res.data.map(k => {
+        el.innerHTML = `<div class="table-container page-content"><div class="table-scroll-wrapper"><table><thead><tr><th>Label</th><th>Key</th><th>Status</th><th>Expired</th><th>Rate Limit</th><th>Penggunaan</th><th>Aksi</th></tr></thead><tbody>${res.data.map(k => {
             const expText = k.expiredDays > 0 ? (k.isExpired ? `<span class="badge badge-red">Expired</span>` : `${k.expiredDays} hari`) : '<span class="badge badge-green">Unlimited</span>';
             const rlText = k.rateLimit > 0 ? `${k.rateLimit}/hari` : '<span class="badge badge-green">Unlimited</span>';
             return `<tr>
@@ -115,7 +115,7 @@ const App = {
                     <button class="btn btn-secondary btn-sm" onclick="App.toggleKey('${k.id}')" title="${k.active?'Nonaktifkan':'Aktifkan'}">${k.active ? IC.pause : IC.play}</button>
                     <button class="btn btn-danger btn-sm" onclick="App.deleteKey('${k.id}','${k.label}')" title="Hapus">${IC.trash}</button>
                 </td></tr>`;
-        }).join('')}</tbody></table></div>`;
+        }).join('')}</tbody></table></div></div>`;
     },
 
     showCreateKeyModal() {
@@ -176,12 +176,12 @@ const App = {
         const res = await fetch('/api/users', { headers: { 'x-api-key': activeKey.key } });
         const data = await res.json();
         if (!data.success || !data.data.length) { el.innerHTML = `<div class="table-container"><div class="empty-state">${IC.users}<p>Belum ada user terdaftar.</p></div></div>`; return; }
-        el.innerHTML = `<div class="table-container page-content"><table><thead><tr><th>ID</th><th>Nama</th><th>Role</th><th>Dibuat</th><th>Aksi</th></tr></thead><tbody>${data.data.map(u => `<tr>
+        el.innerHTML = `<div class="table-container page-content"><div class="table-scroll-wrapper"><table><thead><tr><th>ID</th><th>Nama</th><th>Role</th><th>Dibuat</th><th>Aksi</th></tr></thead><tbody>${data.data.map(u => `<tr>
             <td class="mono">#${u.id}</td><td style="font-weight:600">${u.name}</td>
             <td><span class="badge ${u.role==='Admin'?'badge-purple':'badge-blue'}">${u.role}</span></td>
             <td style="font-size:12px;color:var(--text-muted)">${this.fmtT(u.createdAt)}</td>
             <td style="white-space:nowrap"><button class="btn btn-secondary btn-sm" onclick="App.showEditUserModal(${u.id},'${u.name.replace(/'/g,"\\'")}','${u.role}')">${IC.edit}</button> <button class="btn btn-danger btn-sm" onclick="App.deleteUser(${u.id},'${u.name.replace(/'/g,"\\'")}')">${IC.trash}</button></td>
-        </tr>`).join('')}</tbody></table></div>`;
+        </tr>`).join('')}</tbody></table></div></div>`;
     },
 
     showCreateUserModal() {
@@ -222,13 +222,13 @@ const App = {
         const res = await Auth.apiFetch('/api/admin/logs?limit=100');
         if (!res?.success || !res.data.length) { el.innerHTML = `<div class="table-container"><div class="empty-state">${IC.inbox}<p>Belum ada request log.</p></div></div>`; return; }
         el.innerHTML = `<div class="table-container page-content"><div class="table-header"><span class="table-title">${IC.log} ${res.data.length} log terbaru</span></div>
-            <table><thead><tr><th>Waktu</th><th>Method</th><th>Path</th><th>API Key</th><th>IP</th></tr></thead><tbody>${res.data.map(l => `<tr>
+            <div class="table-scroll-wrapper"><table><thead><tr><th>Waktu</th><th>Method</th><th>Path</th><th>API Key</th><th>IP</th></tr></thead><tbody>${res.data.map(l => `<tr>
             <td style="font-size:12px;color:var(--text-muted)">${this.fmtT(l.timestamp)}</td>
             <td><span class="method method-${(l.method||'get').toLowerCase()}">${l.method}</span></td>
             <td class="mono">${l.path}</td>
             <td><span class="badge badge-purple">${l.apiKeyLabel||'-'}</span></td>
             <td style="font-size:12px;color:var(--text-muted)">${l.ip||'-'}</td>
-        </tr>`).join('')}</tbody></table></div>`;
+        </tr>`).join('')}</tbody></table></div></div>`;
     },
 
     // MODAL
@@ -397,13 +397,13 @@ const App = {
         const res = await Auth.apiFetch('/api/admin/subscription-plans');
         if (!res?.success || !res.data.length) { el.innerHTML = '<div class="table-container"><div class="empty-state"><p>Belum ada paket langganan.</p></div></div>'; return; }
         this._plansData = res.data;
-        el.innerHTML = `<div class="table-container page-content"><table><thead><tr><th>Nama</th><th>Harga</th><th>Durasi</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${res.data.map(p => `<tr>
+        el.innerHTML = `<div class="table-container page-content"><div class="table-scroll-wrapper"><table><thead><tr><th>Nama</th><th>Harga</th><th>Durasi</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${res.data.map(p => `<tr>
             <td style="font-weight:600">${p.name}</td>
             <td>Rp ${p.price.toLocaleString('id-ID')}</td>
             <td>${p.duration_days} hari</td>
             <td><span class="badge ${p.active?'badge-green':'badge-red'}">${p.active?'Aktif':'Nonaktif'}</span></td>
             <td><button class="btn btn-secondary btn-sm" onclick="App.showEditPlanModal(${p.id})">${IC.edit}</button> <button class="btn btn-danger btn-sm" onclick="App.deletePlan(${p.id},'${p.name.replace(/'/g,"\\'")}')">${IC.trash}</button></td>
-        </tr>`).join('')}</tbody></table></div>`;
+        </tr>`).join('')}</tbody></table></div></div>`;
     },
     showCreatePlanModal() {
         this.showModal('Buat Paket Langganan', `
@@ -440,7 +440,7 @@ const App = {
         const [usersRes, plansRes] = await Promise.all([Auth.apiFetch('/api/admin/users-list'), Auth.apiFetch('/api/admin/subscription-plans')]);
         if (!usersRes?.success || !usersRes.data.length) { el.innerHTML = '<div class="table-container"><div class="empty-state"><p>Belum ada user terdaftar.</p></div></div>'; return; }
         this._userPlans = plansRes?.data || [];
-        el.innerHTML = `<div class="table-container page-content"><table><thead><tr><th>Nama</th><th>Email</th><th>API Key</th><th>Status</th><th>Expired</th><th>Aksi</th></tr></thead><tbody>${usersRes.data.map(u => {
+        el.innerHTML = `<div class="table-container page-content"><div class="table-scroll-wrapper"><table><thead><tr><th>Nama</th><th>Email</th><th>API Key</th><th>Status</th><th>Expired</th><th>Aksi</th></tr></thead><tbody>${usersRes.data.map(u => {
             const exp = u.subscriptionExpiresAt ? new Date(u.subscriptionExpiresAt).toLocaleDateString('id-ID') : '—';
             return `<tr>
             <td style="font-weight:600">${u.name}<br><span style="font-size:11px;color:var(--text-muted)">${u.whatsapp||''}</span></td>
@@ -449,7 +449,7 @@ const App = {
             <td><span class="badge ${u.apiKeyActive?'badge-green':'badge-red'}">${u.apiKeyActive?'Aktif':'Nonaktif'}</span></td>
             <td style="font-size:12px">${exp}</td>
             <td style="white-space:nowrap">${u.apiKeyActive?`<button class="btn btn-danger btn-sm" onclick="App.deactivateUser(${u.id},'${u.name.replace(/'/g,"\\'")}')">Nonaktifkan</button>`:`<button class="btn btn-primary btn-sm" onclick="App.showActivateModal(${u.id},'${u.name.replace(/'/g,"\\'")}')">Aktifkan</button>`}</td>
-        </tr>`}).join('')}</tbody></table></div>`;
+        </tr>`}).join('')}</tbody></table></div></div>`;
     },
     showActivateModal(userId, userName) {
         const opts = (this._userPlans||[]).map(p => `<option value="${p.id}">${p.name} — Rp ${p.price.toLocaleString('id-ID')} (${p.duration_days} hari)</option>`).join('');
@@ -473,7 +473,7 @@ const App = {
         const c = res?.data || { title: '', siteName: '', author: '', favicon: '', whatsapp: '' };
         el.innerHTML = `<div class="page-content">
             <div class="settings-section">
-                <div class="settings-title">⚙️ General Settings</div>
+                <div class="settings-title">${IC.edit} General Settings</div>
                 <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px">Pengaturan ini disimpan di file lokal server — tanpa database, load instan.</p>
                 <div class="form-group"><label class="form-label">Title Website</label><input class="form-input" id="cfgTitle" value="${c.title}" placeholder="Judul yang tampil di tab browser"></div>
                 <div class="form-group"><label class="form-label">Nama Website</label><input class="form-input" id="cfgSiteName" value="${c.siteName}" placeholder="Nama brand / logo text"></div>
@@ -481,12 +481,12 @@ const App = {
                 <div class="form-group"><label class="form-label">Favicon URL</label><input class="form-input" id="cfgFavicon" value="${c.favicon}" placeholder="URL atau path (contoh: /image/favicon.png)"><div class="form-hint">Taruh file favicon di /public/image/ lalu isi path: /image/favicon.png</div></div>
                 <div class="form-group"><label class="form-label">WhatsApp Customer Service</label><input class="form-input" id="cfgWhatsapp" value="${c.whatsapp || ''}" placeholder="6283857794217 (format internasional tanpa +)"><div class="form-hint">Nomor WA untuk tombol CS di footer dan kontak di API Docs. Format: 62xxx (tanpa + atau 0).</div></div>
                 <div style="display:flex;gap:10px;align-items:center;margin-top:20px">
-                    <button class="btn btn-primary" onclick="App.saveSiteConfig()" id="saveCfgBtn">💾 Simpan</button>
+                    <button class="btn btn-primary" onclick="App.saveSiteConfig()" id="saveCfgBtn">${IC.check} Simpan</button>
                     <span style="font-size:12px;color:var(--text-muted)" id="cfgSaveStatus"></span>
                 </div>
             </div>
             <div class="settings-section">
-                <div class="settings-title">👁️ Preview</div>
+                <div class="settings-title">${IC.chart} Preview</div>
                 <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
                     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
                         ${c.favicon ? '<img src="'+c.favicon+'" style="width:24px;height:24px;border-radius:4px" onerror="this.style.display=\'none\'">' : ''}

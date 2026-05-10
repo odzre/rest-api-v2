@@ -1,4 +1,4 @@
-const IC={check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',dollar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',refresh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>'};
+const IC={check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',dollar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',refresh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>',shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>'};
 
 const App={
     currentPage:'dashboard',
@@ -71,14 +71,14 @@ const App={
         let statusHtml='';
         if(profile.apiKeyActive){
             const exp=profile.subscriptionExpiresAt?new Date(profile.subscriptionExpiresAt).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}):'—';
-            statusHtml=`<div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">STATUS LANGGANAN</div><div class="stat-value" style="color:var(--green);font-size:20px">✅ Aktif</div><div class="stat-sub">Berlaku hingga: ${exp}</div></div><span class="badge badge-green">Active</span></div></div>`;
+            statusHtml=`<div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">STATUS LANGGANAN</div><div class="stat-value" style="color:var(--green);font-size:20px">${IC.check} Aktif</div><div class="stat-sub">Berlaku hingga: ${exp}</div></div><span class="badge badge-green">Active</span></div></div>`;
         }else{
-            statusHtml=`<div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">STATUS LANGGANAN</div><div class="stat-value" style="color:var(--red);font-size:20px">⛔ Tidak Aktif</div><div class="stat-sub">Beli paket langganan untuk mengaktifkan API Key</div></div><span class="badge badge-red">Inactive</span></div></div>`;
+            statusHtml=`<div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">STATUS LANGGANAN</div><div class="stat-value" style="color:var(--red);font-size:20px">${IC.x} Tidak Aktif</div><div class="stat-sub">Beli paket langganan untuk mengaktifkan API Key</div></div><span class="badge badge-red">Inactive</span></div></div>`;
         }
         if(plans.length===0){
             el.innerHTML=statusHtml+'<div class="empty-state"><p>Belum ada paket langganan tersedia.</p></div>';return;
         }
-        el.innerHTML=statusHtml+`<div class="section-title">📦 Pilih Paket Langganan</div><div class="plans-grid page-content">${plans.map(p=>{
+        el.innerHTML=statusHtml+`<div class="section-title">${IC.box} Pilih Paket Langganan</div><div class="plans-grid page-content">${plans.map(p=>{
             const benefits=(p.benefits||[]).map(b=>`<li>${IC.check} ${b}</li>`).join('');
             return`<div class="plan-card"><div class="plan-name">${p.name}</div><div class="plan-price">Rp ${p.price.toLocaleString('id-ID')}</div><div class="plan-duration">${p.duration_days} hari masa aktif</div><div class="plan-desc">${p.description||''}</div>${benefits?`<ul class="plan-benefits">${benefits}</ul>`:''}<button class="btn btn-primary plan-cta" onclick="App.requestSubscription(${p.id},'${p.name.replace(/'/g,"\\'")}')">Hubungi Admin</button></div>`;
         }).join('')}</div>`;
@@ -94,12 +94,12 @@ const App={
         const status=await UserAuth.apiFetch('/api/user/gopay/token-status');
         const hasToken=status?.data?.hasToken;
         el.innerHTML=`<div class="page-content">
-            <div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">STATUS TOKEN GOPAY</div><div class="stat-value" style="font-size:18px;color:${hasToken?'var(--green)':'var(--red)'};">${hasToken?'✅ Token Tersimpan':'⛔ Belum Setup'}</div><div class="stat-sub">${hasToken?'Terakhir disimpan: '+(status.data.savedAt?new Date(status.data.savedAt).toLocaleString('id-ID'):'—'):'Silakan setup token GoPay Merchant Anda'}</div></div>${hasToken?'<button class="btn btn-danger btn-sm" onclick="App.deleteGopayToken()">Hapus Token</button>':''}</div></div>
+            <div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">STATUS TOKEN GOPAY</div><div class="stat-value" style="font-size:18px;color:${hasToken?'var(--green)':'var(--red)'};">${hasToken?IC.check+' Token Tersimpan':IC.x+' Belum Setup'}</div><div class="stat-sub">${hasToken?'Terakhir disimpan: '+(status.data.savedAt?new Date(status.data.savedAt).toLocaleString('id-ID'):'—'):'Silakan setup token GoPay Merchant Anda'}</div></div>${hasToken?'<button class="btn btn-danger btn-sm" onclick="App.deleteGopayToken()">Hapus Token</button>':''}</div></div>
             <div class="section-title">${IC.dollar} Setup GoPay Merchant</div>
             <div class="otp-steps"><div class="otp-step active" id="gopayStep1">1. Request OTP</div><div class="otp-step" id="gopayStep2">2. Verifikasi OTP</div><div class="otp-step" id="gopayStep3">3. Simpan Token</div></div>
             <div class="settings-section">
                 <div class="otp-panel active" id="gopayPanel1">
-                    <div class="form-group"><label class="form-label">Nomor HP GoPay</label><input class="form-input" id="gopayPhone" placeholder="83857794217 (tanpa 0 atau 62)"></div>
+                    <div class="form-group"><label class="form-label">Nomor HP GoPay</label><input class="form-input" id="gopayPhone" placeholder="83xxxxxxx (tanpa 0 atau 62)"></div>
                     <button class="btn btn-primary" onclick="App.gopayRequestOtp()" id="gopayOtpBtn">Kirim OTP</button>
                 </div>
                 <div class="otp-panel" id="gopayPanel2">
@@ -107,7 +107,7 @@ const App={
                     <button class="btn btn-primary" onclick="App.gopayVerifyOtp()" id="gopayVerifyBtn">Verifikasi OTP</button>
                 </div>
                 <div class="otp-panel" id="gopayPanel3">
-                    <p style="color:var(--green);font-weight:600;margin-bottom:12px">✅ Token berhasil didapatkan dan disimpan!</p>
+                    <p style="color:var(--green);font-weight:600;margin-bottom:12px">${IC.check} Token berhasil didapatkan dan disimpan!</p>
                     <p style="color:var(--text-muted);font-size:13px">Token GoPay Merchant Anda telah dienkripsi dan tersimpan dengan aman. Anda sekarang bisa menggunakan endpoint order tanpa memasukkan token manual.</p>
                 </div>
             </div>
@@ -167,7 +167,7 @@ const App={
         const status=await UserAuth.apiFetch('/api/user/orderkouta/token-status');
         const hasToken=status?.data?.hasToken;
         el.innerHTML=`<div class="page-content">
-            <div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">STATUS TOKEN ORDERKOUTA</div><div class="stat-value" style="font-size:18px;color:${hasToken?'var(--green)':'var(--red)'};">${hasToken?'✅ Token Tersimpan':'⛔ Belum Setup'}</div><div class="stat-sub">${hasToken?'Terakhir disimpan: '+(status.data.savedAt?new Date(status.data.savedAt).toLocaleString('id-ID'):'—'):'Silakan setup token OrderKuota Anda'}</div></div>${hasToken?'<button class="btn btn-danger btn-sm" onclick="App.deleteOrkutToken()">Hapus Token</button>':''}</div></div>
+            <div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">STATUS TOKEN ORDERKOUTA</div><div class="stat-value" style="font-size:18px;color:${hasToken?'var(--green)':'var(--red)'};">${hasToken?IC.check+' Token Tersimpan':IC.x+' Belum Setup'}</div><div class="stat-sub">${hasToken?'Terakhir disimpan: '+(status.data.savedAt?new Date(status.data.savedAt).toLocaleString('id-ID'):'—'):'Silakan setup token OrderKuota Anda'}</div></div>${hasToken?'<button class="btn btn-danger btn-sm" onclick="App.deleteOrkutToken()">Hapus Token</button>':''}</div></div>
             <div class="section-title">${IC.chart} Setup OrderKuota</div>
             <div class="otp-steps"><div class="otp-step active" id="orkutStep1">1. Login</div><div class="otp-step" id="orkutStep2">2. Verifikasi OTP</div><div class="otp-step" id="orkutStep3">3. Simpan Token</div></div>
             <div class="settings-section">
@@ -181,7 +181,7 @@ const App={
                     <button class="btn btn-primary" onclick="App.orkutVerifyOtp()" id="orkutVerifyBtn">Verifikasi OTP</button>
                 </div>
                 <div class="otp-panel" id="orkutPanel3">
-                    <p style="color:var(--green);font-weight:600;margin-bottom:12px">✅ Token berhasil didapatkan dan disimpan!</p>
+                    <p style="color:var(--green);font-weight:600;margin-bottom:12px">${IC.check} Token berhasil didapatkan dan disimpan!</p>
                     <p style="color:var(--text-muted);font-size:13px">Token OrderKuota Anda telah dienkripsi dan tersimpan. Anda bisa menggunakan endpoint order tanpa memasukkan token manual.</p>
                 </div>
             </div>
@@ -237,15 +237,15 @@ const App={
         const u=res.data;
         el.innerHTML=`<div class="page-content">
             <div class="settings-section">
-                <div class="settings-title">👤 Profil</div>
+                <div class="settings-title">${IC.shield} Profil</div>
                 <div class="form-group"><label class="form-label">Nama</label><input class="form-input" id="setName" value="${u.name}"></div>
                 <div class="form-group"><label class="form-label">Email</label><input class="form-input" value="${u.email}" disabled style="opacity:0.6"></div>
                 <div class="form-group"><label class="form-label">Nomor WhatsApp</label><input class="form-input" id="setWa" value="${u.whatsapp||''}"></div>
-                <div class="form-group"><label class="form-label">API Key</label><div style="display:flex;gap:8px;align-items:center"><input class="form-input" value="${u.apiKey}" disabled style="font-family:var(--font-mono);opacity:0.8"><button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText('${u.apiKey}');Toast.success('API Key disalin!')">${IC.copy}</button></div><div class="form-hint">${u.apiKeyActive?'<span style="color:var(--green)">✅ Aktif</span>':'<span style="color:var(--red)">⛔ Tidak aktif — Beli paket langganan untuk mengaktifkan</span>'}</div></div>
+                <div class="form-group"><label class="form-label">API Key</label><div style="display:flex;gap:8px;align-items:center"><input class="form-input" value="${u.apiKey}" disabled style="font-family:var(--font-mono);opacity:0.8"><button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText('${u.apiKey}');Toast.success('API Key disalin!')">${IC.copy}</button></div><div class="form-hint">${u.apiKeyActive?'<span style="color:var(--green)">'+IC.check+' Aktif</span>':'<span style="color:var(--red)">'+IC.x+' Tidak aktif — Beli paket langganan untuk mengaktifkan</span>'}</div></div>
                 <button class="btn btn-primary" onclick="App.saveProfile()" id="saveProfileBtn">Simpan Profil</button>
             </div>
             <div class="settings-section">
-                <div class="settings-title">🔒 Ubah Password</div>
+                <div class="settings-title">${IC.shield} Ubah Password</div>
                 <div class="form-group"><label class="form-label">Password Sekarang</label><input class="form-input" type="password" id="curPass" placeholder="Masukkan password saat ini"></div>
                 <div class="form-row">
                     <div class="form-group"><label class="form-label">Password Baru</label><input class="form-input" type="password" id="newPass" placeholder="Min. 6 karakter"></div>
@@ -254,7 +254,7 @@ const App={
                 <button class="btn btn-primary" onclick="App.changePassword()" id="changePassBtn">Ubah Password</button>
             </div>
             <div class="settings-section" style="text-align:center">
-                <a href="/docs" target="_blank" class="btn btn-secondary btn-lg">📚 Buka API Docs</a>
+                <a href="/docs" target="_blank" class="btn btn-secondary btn-lg">${IC.chart} Buka API Docs</a>
             </div>
         </div>`;
     },
