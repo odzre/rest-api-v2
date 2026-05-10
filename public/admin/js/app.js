@@ -49,13 +49,13 @@ const App = {
         this.currentPage = page;
         location.hash = page;
         document.querySelectorAll('.nav-item[data-page]').forEach(i => i.classList.toggle('active', i.dataset.page === page));
-        const titles = { dashboard: ['Dashboard','Overview sistem API kamu'], apikeys: ['API Keys','Kelola kunci akses API'], logs: ['Request Logs','Riwayat request API terbaru'], notification: ['Notifikasi','Konfigurasi notifikasi Telegram / WhatsApp'] };
+        const titles = { dashboard: ['Dashboard','Overview sistem API kamu'], apikeys: ['API Keys','Kelola kunci akses API'], logs: ['Request Logs','Riwayat request API terbaru'], notification: ['Notifikasi','Konfigurasi notifikasi Telegram / WhatsApp'], langganan: ['Langganan','Kelola paket langganan'], users: ['Users','Kelola user terdaftar'], websettings: ['Web Settings','Pengaturan website & branding'] };
         const [t, s] = titles[page] || titles.dashboard;
         document.getElementById('pageTitle').textContent = t;
         document.getElementById('pageSubtitle').textContent = s;
         document.getElementById('headerActions').innerHTML = '';
         document.getElementById('mainBody').innerHTML = '<div class="page-content" id="pageContent"></div>';
-        const r = { dashboard: () => this.renderDashboard(), apikeys: () => this.renderApiKeys(), logs: () => this.renderLogs(), notification: () => this.renderNotification() };
+        const r = { dashboard: () => this.renderDashboard(), apikeys: () => this.renderApiKeys(), logs: () => this.renderLogs(), notification: () => this.renderNotification(), langganan: () => this.renderLangganan(), users: () => this.renderUsersPage(), websettings: () => this.renderWebSettings() };
         (r[page] || r.dashboard)();
     },
 
@@ -387,6 +387,146 @@ const App = {
             btn.disabled = false;
             btn.innerHTML = `${IC.send} Test Kirim`;
         }
+    },
+
+    // LANGGANAN MANAGEMENT
+    async renderLangganan() {
+        const el = document.getElementById('pageContent');
+        document.getElementById('headerActions').innerHTML = `<button class="btn btn-primary" onclick="App.showCreatePlanModal()">${IC.plus} Buat Paket</button>`;
+        el.innerHTML = '<div class="table-container"><div class="skeleton" style="height:200px;margin:16px"></div></div>';
+        const res = await Auth.apiFetch('/api/admin/subscription-plans');
+        if (!res?.success || !res.data.length) { el.innerHTML = '<div class="table-container"><div class="empty-state"><p>Belum ada paket langganan.</p></div></div>'; return; }
+        this._plansData = res.data;
+        el.innerHTML = `<div class="table-container page-content"><table><thead><tr><th>Nama</th><th>Harga</th><th>Durasi</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${res.data.map(p => `<tr>
+            <td style="font-weight:600">${p.name}</td>
+            <td>Rp ${p.price.toLocaleString('id-ID')}</td>
+            <td>${p.duration_days} hari</td>
+            <td><span class="badge ${p.active?'badge-green':'badge-red'}">${p.active?'Aktif':'Nonaktif'}</span></td>
+            <td><button class="btn btn-secondary btn-sm" onclick="App.showEditPlanModal(${p.id})">${IC.edit}</button> <button class="btn btn-danger btn-sm" onclick="App.deletePlan(${p.id},'${p.name.replace(/'/g,"\\'")}')">${IC.trash}</button></td>
+        </tr>`).join('')}</tbody></table></div>`;
+    },
+    showCreatePlanModal() {
+        this.showModal('Buat Paket Langganan', `
+            <div class="form-group"><label class="form-label">Nama Paket</label><input class="form-input" id="planName" placeholder="Contoh: Starter" autofocus></div>
+            <div class="form-row"><div class="form-group"><label class="form-label">Harga (Rp)</label><input class="form-input" id="planPrice" type="number" placeholder="50000"></div>
+            <div class="form-group"><label class="form-label">Durasi (Hari)</label><input class="form-input" id="planDays" type="number" placeholder="30"></div></div>
+            <div class="form-group"><label class="form-label">Deskripsi</label><input class="form-input" id="planDesc" placeholder="Deskripsi paket"></div>
+            <div class="form-group"><label class="form-label">Benefits (pisah koma)</label><input class="form-input" id="planBenefits" placeholder="1000 req/hari, Auto-polling, Webhook"></div>`, async () => {
+            const name=document.getElementById('planName').value.trim();const price=document.getElementById('planPrice').value;const duration_days=document.getElementById('planDays').value;
+            if (!name||!price||!duration_days) return Toast.error('Semua field wajib diisi!');
+            const benefits=document.getElementById('planBenefits').value.split(',').map(b=>b.trim()).filter(Boolean);
+            const r=await Auth.apiFetch('/api/admin/subscription-plans',{method:'POST',body:JSON.stringify({name,price,duration_days,description:document.getElementById('planDesc').value.trim(),benefits})});
+            if(r?.success){Toast.success('Paket berhasil dibuat!');this.closeModal();this.renderLangganan();}else Toast.error(r?.message||'Gagal');
+        });
+    },
+    showEditPlanModal(id) {
+        const p=this._plansData?.find(x=>x.id===id);if(!p)return;
+        this.showModal('Edit Paket', `
+            <div class="form-group"><label class="form-label">Nama</label><input class="form-input" id="planName" value="${p.name}"></div>
+            <div class="form-row"><div class="form-group"><label class="form-label">Harga</label><input class="form-input" id="planPrice" type="number" value="${p.price}"></div>
+            <div class="form-group"><label class="form-label">Durasi (Hari)</label><input class="form-input" id="planDays" type="number" value="${p.duration_days}"></div></div>
+            <div class="form-group"><label class="form-label">Deskripsi</label><input class="form-input" id="planDesc" value="${p.description||''}"></div>
+            <div class="form-group"><label class="form-label">Benefits</label><input class="form-input" id="planBenefits" value="${(p.benefits||[]).join(', ')}"></div>`, async () => {
+            const r=await Auth.apiFetch(`/api/admin/subscription-plans/${id}`,{method:'PUT',body:JSON.stringify({name:document.getElementById('planName').value.trim(),price:document.getElementById('planPrice').value,duration_days:document.getElementById('planDays').value,description:document.getElementById('planDesc').value.trim(),benefits:document.getElementById('planBenefits').value.split(',').map(b=>b.trim()).filter(Boolean)})});
+            if(r?.success){Toast.success('Paket diupdate!');this.closeModal();this.renderLangganan();}else Toast.error(r?.message||'Gagal');
+        });
+    },
+    async deletePlan(id,name){if(!confirm(`Hapus paket "${name}"?`))return;const r=await Auth.apiFetch(`/api/admin/subscription-plans/${id}`,{method:'DELETE'});if(r?.success){Toast.success('Paket dihapus!');this.renderLangganan();}},
+
+    // USERS MANAGEMENT
+    async renderUsersPage() {
+        const el = document.getElementById('pageContent');
+        el.innerHTML = '<div class="table-container"><div class="skeleton" style="height:200px;margin:16px"></div></div>';
+        const [usersRes, plansRes] = await Promise.all([Auth.apiFetch('/api/admin/users-list'), Auth.apiFetch('/api/admin/subscription-plans')]);
+        if (!usersRes?.success || !usersRes.data.length) { el.innerHTML = '<div class="table-container"><div class="empty-state"><p>Belum ada user terdaftar.</p></div></div>'; return; }
+        this._userPlans = plansRes?.data || [];
+        el.innerHTML = `<div class="table-container page-content"><table><thead><tr><th>Nama</th><th>Email</th><th>API Key</th><th>Status</th><th>Expired</th><th>Aksi</th></tr></thead><tbody>${usersRes.data.map(u => {
+            const exp = u.subscriptionExpiresAt ? new Date(u.subscriptionExpiresAt).toLocaleDateString('id-ID') : '—';
+            return `<tr>
+            <td style="font-weight:600">${u.name}<br><span style="font-size:11px;color:var(--text-muted)">${u.whatsapp||''}</span></td>
+            <td style="font-size:12px">${u.email}</td>
+            <td><span class="key-text">${u.apiKey}</span></td>
+            <td><span class="badge ${u.apiKeyActive?'badge-green':'badge-red'}">${u.apiKeyActive?'Aktif':'Nonaktif'}</span></td>
+            <td style="font-size:12px">${exp}</td>
+            <td style="white-space:nowrap">${u.apiKeyActive?`<button class="btn btn-danger btn-sm" onclick="App.deactivateUser(${u.id},'${u.name.replace(/'/g,"\\'")}')">Nonaktifkan</button>`:`<button class="btn btn-primary btn-sm" onclick="App.showActivateModal(${u.id},'${u.name.replace(/'/g,"\\'")}')">Aktifkan</button>`}</td>
+        </tr>`}).join('')}</tbody></table></div>`;
+    },
+    showActivateModal(userId, userName) {
+        const opts = (this._userPlans||[]).map(p => `<option value="${p.id}">${p.name} — Rp ${p.price.toLocaleString('id-ID')} (${p.duration_days} hari)</option>`).join('');
+        this.showModal(`Aktifkan ${userName}`, `<div class="form-group"><label class="form-label">Pilih Paket</label><select class="form-input" id="activatePlan">${opts}</select></div>`, async () => {
+            const planId = document.getElementById('activatePlan').value;
+            const r = await Auth.apiFetch('/api/admin/activate-subscription', { method: 'POST', body: JSON.stringify({ userId, planId }) });
+            if (r?.success) { Toast.success(r.message); this.closeModal(); this.renderUsersPage(); } else Toast.error(r?.message || 'Gagal');
+        });
+    },
+    async deactivateUser(id, name) {
+        if (!confirm(`Nonaktifkan user "${name}"?`)) return;
+        const r = await Auth.apiFetch('/api/admin/deactivate-user', { method: 'POST', body: JSON.stringify({ userId: id }) });
+        if (r?.success) { Toast.success(r.message); this.renderUsersPage(); }
+    },
+
+    // WEB SETTINGS
+    async renderWebSettings() {
+        const el = document.getElementById('pageContent');
+        el.innerHTML = '<div class="skeleton" style="height:300px"></div>';
+        const res = await Auth.apiFetch('/api/admin/site-config');
+        const c = res?.data || { title: '', siteName: '', author: '', favicon: '', whatsapp: '' };
+        el.innerHTML = `<div class="page-content">
+            <div class="settings-section">
+                <div class="settings-title">⚙️ General Settings</div>
+                <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px">Pengaturan ini disimpan di file lokal server — tanpa database, load instan.</p>
+                <div class="form-group"><label class="form-label">Title Website</label><input class="form-input" id="cfgTitle" value="${c.title}" placeholder="Judul yang tampil di tab browser"></div>
+                <div class="form-group"><label class="form-label">Nama Website</label><input class="form-input" id="cfgSiteName" value="${c.siteName}" placeholder="Nama brand / logo text"></div>
+                <div class="form-group"><label class="form-label">Author / Credit</label><input class="form-input" id="cfgAuthor" value="${c.author}" placeholder="Nama author untuk footer credit"></div>
+                <div class="form-group"><label class="form-label">Favicon URL</label><input class="form-input" id="cfgFavicon" value="${c.favicon}" placeholder="URL atau path (contoh: /image/favicon.png)"><div class="form-hint">Taruh file favicon di /public/image/ lalu isi path: /image/favicon.png</div></div>
+                <div class="form-group"><label class="form-label">WhatsApp Customer Service</label><input class="form-input" id="cfgWhatsapp" value="${c.whatsapp || ''}" placeholder="6283857794217 (format internasional tanpa +)"><div class="form-hint">Nomor WA untuk tombol CS di footer dan kontak di API Docs. Format: 62xxx (tanpa + atau 0).</div></div>
+                <div style="display:flex;gap:10px;align-items:center;margin-top:20px">
+                    <button class="btn btn-primary" onclick="App.saveSiteConfig()" id="saveCfgBtn">💾 Simpan</button>
+                    <span style="font-size:12px;color:var(--text-muted)" id="cfgSaveStatus"></span>
+                </div>
+            </div>
+            <div class="settings-section">
+                <div class="settings-title">👁️ Preview</div>
+                <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                        ${c.favicon ? '<img src="'+c.favicon+'" style="width:24px;height:24px;border-radius:4px" onerror="this.style.display=\'none\'">' : ''}
+                        <span style="font-weight:700;font-size:16px" id="previewName">${c.siteName || 'Odzreshop API'}</span>
+                    </div>
+                    <div style="font-size:13px;color:var(--text-muted)">Tab title: <span style="color:var(--text-primary)" id="previewTitle">${c.title || 'Odzreshop API'}</span></div>
+                    <div style="font-size:13px;color:var(--text-muted);margin-top:4px">Footer credit: © 2025 <span id="previewAuthor">${c.author || 'Odzreshop'}</span></div>
+                    <div style="font-size:13px;color:var(--text-muted);margin-top:4px">WhatsApp CS: <span style="color:var(--green)" id="previewWa">${c.whatsapp || '—'}</span></div>
+                </div>
+            </div>
+        </div>`;
+        ['cfgTitle','cfgSiteName','cfgAuthor','cfgWhatsapp'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', () => {
+                const pTitle = document.getElementById('previewTitle');
+                const pName = document.getElementById('previewName');
+                const pAuth = document.getElementById('previewAuthor');
+                const pWa = document.getElementById('previewWa');
+                if (pTitle) pTitle.textContent = document.getElementById('cfgTitle').value || 'Odzreshop API';
+                if (pName) pName.textContent = document.getElementById('cfgSiteName').value || 'Odzreshop API';
+                if (pAuth) pAuth.textContent = document.getElementById('cfgAuthor').value || 'Odzreshop';
+                if (pWa) pWa.textContent = document.getElementById('cfgWhatsapp').value || '—';
+            });
+        });
+    },
+    async saveSiteConfig() {
+        const btn = document.getElementById('saveCfgBtn');
+        btn.disabled = true;
+        const r = await Auth.apiFetch('/api/admin/site-config', { method: 'PUT', body: JSON.stringify({
+            title: document.getElementById('cfgTitle').value.trim(),
+            siteName: document.getElementById('cfgSiteName').value.trim(),
+            author: document.getElementById('cfgAuthor').value.trim(),
+            favicon: document.getElementById('cfgFavicon').value.trim(),
+            whatsapp: document.getElementById('cfgWhatsapp').value.trim()
+        })});
+        btn.disabled = false;
+        if (r?.success) {
+            Toast.success('Site config berhasil disimpan!');
+            document.getElementById('cfgSaveStatus').textContent = 'Tersimpan ✓';
+            setTimeout(() => { const s = document.getElementById('cfgSaveStatus'); if(s) s.textContent = ''; }, 3000);
+        } else Toast.error(r?.message || 'Gagal menyimpan.');
     }
 };
 

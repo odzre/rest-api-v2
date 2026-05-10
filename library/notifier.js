@@ -1,22 +1,22 @@
-const { getJSON } = require('../config/redis');
+const db = require('../config/database');
 
 /**
  * Notification Service
  * Mendukung Telegram (extensible ke WhatsApp, Discord, dll)
- * Config disimpan di Redis key "settings:notification"
+ * Config disimpan di MySQL settings table
  */
 
-const SETTINGS_KEY = 'settings:notification';
+const SETTINGS_KEY = 'notification';
 
 /**
- * Ambil settings notifikasi dari Redis
+ * Ambil settings notifikasi dari MySQL
  */
 async function getSettings() {
     try {
-        return await getJSON(SETTINGS_KEY) || {
-            enabled: false,
-            telegram: { enabled: false, botToken: '', chatId: '' },
-        };
+        const row = await db.getOne('SELECT value FROM settings WHERE `key` = ?', [SETTINGS_KEY]);
+        if (!row) return { enabled: false, telegram: { enabled: false, botToken: '', chatId: '' } };
+        const val = typeof row.value === 'string' ? JSON.parse(row.value) : row.value;
+        return val || { enabled: false, telegram: { enabled: false, botToken: '', chatId: '' } };
     } catch {
         return { enabled: false, telegram: { enabled: false, botToken: '', chatId: '' } };
     }
@@ -120,7 +120,7 @@ async function testTelegram(botToken, chatId) {
     const message = `🔔 <b>Test Notifikasi</b>
 
 Koneksi Telegram berhasil!
-Server: Express Scalar API
+Server: Odzreshop API
 Waktu: ${formatWIB(new Date())}`;
 
     return await sendTelegram(botToken, chatId, message);

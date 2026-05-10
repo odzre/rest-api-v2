@@ -197,24 +197,27 @@ function startPollingOrkut(reffid, credentials, expiredMinutes) {
             const order = await getOrder(reffid);
             if (!order || order.status !== 'PENDING') { stopPolling(reffid); return; }
 
-            console.log(`[Order] 🔄 Polling orkut: ${reffid}`);
+            console.log(`[Order] 🔄 Polling orkut: ${reffid} (nominal=${order.nominal})`);
             const mutasi = await fetchOrkutMutasi(username, auth_token);
 
-            // Try multiple response structures
             const txList = mutasi?.data?.qris_history?.data || mutasi?.data?.qris_history || [];
-            if (!Array.isArray(txList)) return;
-
-            const orderTime = new Date(order.created_at).getTime();
+            
+            if (!Array.isArray(txList) || txList.length === 0) {
+                console.log(`[Order] ⚠️ No Orkut TX for: ${reffid}`);
+                return;
+            }
 
             for (const tx of txList) {
-                const amt = parseInt(tx.jumlah || tx.nominal || tx.amount || 0);
-                const txTime = new Date(tx.tanggal || tx.created_at || tx.date || 0).getTime();
+                const rawAmt = tx.jumlah || tx.nominal || tx.amount || '0';
+                const amt = Math.round(parseFloat(String(rawAmt).replace(/[^0-9.]/g, '')) || 0);
 
-                if (amt === order.nominal && txTime >= orderTime) {
+                if (amt === order.nominal) {
+                    console.log(`[Order] ✅ PAID orkut! ${reffid} amount=${amt}`);
                     await handlePaid(reffid, order, tx);
                     return;
                 }
             }
+            console.log(`[Order] ❌ No match orkut ${reffid} (nominal=${order.nominal})`);
         } catch (err) {
             console.error(`[Order] Orkut poll error ${reffid}:`, err.message);
         }
@@ -308,35 +311,37 @@ function startPollingGomerchant(reffid, credentials, expiredMinutes) {
             const order = await getOrder(reffid);
             if (!order || order.status !== 'PENDING') { stopPolling(reffid); return; }
 
-            console.log(`[Order] 🔄 Polling gopay: ${reffid}`);
+            console.log(`[Order] 🔄 Polling gopay: ${reffid} (nominal=${order.nominal})`);
             const { result, newTokens } = await fetchGopayMutasi(access_token, refresh_token, x_uniqueid);
 
-            // Update tokens if refreshed
             if (newTokens) {
                 access_token = newTokens.access_token;
                 refresh_token = newTokens.refresh_token;
                 await updateOrder(reffid, { credentials: { access_token, refresh_token, x_uniqueid } });
             }
 
-            if (!result.ok) return;
+            if (!result.ok) {
+                console.log(`[Order] ⚠️ GoPay API error: status=${result.status}`);
+                return;
+            }
 
-            // Parse transactions from GoPay response (actual structure: data.hits[])
             const hits = result.data?.hits || [];
-            if (!Array.isArray(hits)) return;
-
-            const orderTime = new Date(order.created_at).getTime();
+            if (!Array.isArray(hits) || hits.length === 0) return;
 
             for (const tx of hits) {
-                // Filter: hanya transaksi sukses & incoming (bukan refund/reverse)
                 if (tx.status !== 'success' || tx.category !== 'incoming') continue;
 
-                const amt = parseInt(tx.amount || 0);
-                const txTime = new Date(tx.time || tx.created_at || 0).getTime();
+                const rawAmt = parseInt(tx.amount || 0);
+                const amtDirect = rawAmt;
+                const amtDivided = Math.round(rawAmt / 100);
 
-                if (amt === order.nominal && txTime >= orderTime) {
+                if (amtDirect === order.nominal || amtDivided === order.nominal) {
+                    const finalAmt = amtDirect === order.nominal ? amtDirect : amtDivided;
+                    console.log(`[Order] ✅ PAID! ${reffid} raw=${rawAmt}, matched=${finalAmt}`);
                     await handlePaid(reffid, order, {
                         reference_id: tx.reference_id,
-                        amount: tx.amount,
+                        amount: rawAmt,
+                        amount_idr: finalAmt,
                         time: tx.time,
                         status: tx.status,
                         issuer: tx.metadata?.issuer || null,
@@ -346,6 +351,7 @@ function startPollingGomerchant(reffid, credentials, expiredMinutes) {
                     return;
                 }
             }
+            console.log(`[Order] ❌ No match for ${reffid} (nominal=${order.nominal})`);
         } catch (err) {
             console.error(`[Order] Gopay poll error ${reffid}:`, err.message);
         }

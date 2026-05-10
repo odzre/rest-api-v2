@@ -1,23 +1,12 @@
 const { sendResponse } = require('../library/response');
-const { getJSON, setJSON, deleteKey, scanKeys, increment } = require('../config/redis');
+const db = require('../config/database');
 
 /**
  * GET /api/users
- * Ambil semua data pengguna dari Redis
  */
 const getUsers = async (req, res) => {
     try {
-        const keys = await scanKeys('user:*');
-        const users = [];
-
-        for (const key of keys) {
-            const user = await getJSON(key);
-            if (user) users.push(user);
-        }
-
-        // Sort by id ascending
-        users.sort((a, b) => a.id - b.id);
-
+        const users = await db.query('SELECT * FROM users ORDER BY id ASC');
         return sendResponse(res, 200, true, `${users.length} pengguna ditemukan.`, users);
     } catch (err) {
         console.error('[User] GetAll error:', err.message);
@@ -27,12 +16,11 @@ const getUsers = async (req, res) => {
 
 /**
  * GET /api/users/:id
- * Ambil satu pengguna berdasarkan ID
  */
 const getUserById = async (req, res) => {
     try {
         const { id } = req.params;
-        const user = await getJSON(`user:${id}`);
+        const user = await db.getOne('SELECT * FROM users WHERE id = ?', [id]);
 
         if (!user) {
             return sendResponse(res, 404, false, 'Pengguna tidak ditemukan.');
@@ -47,7 +35,6 @@ const getUserById = async (req, res) => {
 
 /**
  * POST /api/users
- * Buat pengguna baru
  */
 const createUser = async (req, res) => {
     try {
@@ -57,16 +44,12 @@ const createUser = async (req, res) => {
             return sendResponse(res, 400, false, 'Nama dan role wajib diisi!');
         }
 
-        const id = await increment('counter:users');
-        const newUser = {
-            id,
-            name,
-            role,
-            createdAt: new Date().toISOString()
-        };
+        const result = await db.run(
+            'INSERT INTO users (name, email, whatsapp, password_hash, api_key, api_key_active) VALUES (?, ?, ?, ?, ?, 0)',
+            [name, `${name.toLowerCase().replace(/\s+/g, '')}@placeholder.com`, '', '', `temp-${Date.now()}`]
+        );
 
-        await setJSON(`user:${id}`, newUser);
-
+        const newUser = { id: result.insertId, name, role, createdAt: new Date().toISOString() };
         return sendResponse(res, 201, true, 'Pengguna berhasil ditambahkan.', newUser);
     } catch (err) {
         console.error('[User] Create error:', err.message);
@@ -76,25 +59,23 @@ const createUser = async (req, res) => {
 
 /**
  * PUT /api/users/:id
- * Update data pengguna
  */
 const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const existing = await getJSON(`user:${id}`);
+        const existing = await db.getOne('SELECT * FROM users WHERE id = ?', [id]);
 
         if (!existing) {
             return sendResponse(res, 404, false, 'Pengguna tidak ditemukan.');
         }
 
         const { name, role } = req.body;
-        if (name) existing.name = name;
-        if (role) existing.role = role;
-        existing.updatedAt = new Date().toISOString();
+        if (name) {
+            await db.run('UPDATE users SET name = ? WHERE id = ?', [name, id]);
+        }
 
-        await setJSON(`user:${id}`, existing);
-
-        return sendResponse(res, 200, true, 'Pengguna berhasil diupdate.', existing);
+        const updated = await db.getOne('SELECT * FROM users WHERE id = ?', [id]);
+        return sendResponse(res, 200, true, 'Pengguna berhasil diupdate.', updated);
     } catch (err) {
         console.error('[User] Update error:', err.message);
         return sendResponse(res, 500, false, 'Terjadi kesalahan server.');
@@ -103,18 +84,17 @@ const updateUser = async (req, res) => {
 
 /**
  * DELETE /api/users/:id
- * Hapus pengguna
  */
 const deleteUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const user = await getJSON(`user:${id}`);
+        const user = await db.getOne('SELECT * FROM users WHERE id = ?', [id]);
 
         if (!user) {
             return sendResponse(res, 404, false, 'Pengguna tidak ditemukan.');
         }
 
-        await deleteKey(`user:${id}`);
+        await db.run('DELETE FROM users WHERE id = ?', [id]);
 
         return sendResponse(res, 200, true, 'Pengguna berhasil dihapus.', { id: parseInt(id), name: user.name });
     } catch (err) {

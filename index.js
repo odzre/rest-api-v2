@@ -6,7 +6,8 @@ const { apiReference } = require('@scalar/express-api-reference');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 
-const { testConnection, getJSON, setJSON } = require('./config/redis');
+const { testConnection: testRedis } = require('./config/redis');
+const db = require('./config/database');
 
 // Routes
 const adminRoutes = require('./routes/adminRoutes');
@@ -15,6 +16,7 @@ const gopayRoutes = require('./routes/gopayRoutes');
 const orderkoutaRoutes = require('./routes/orderkoutaRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const cekidRoutes = require('./routes/cekidRoutes');
+const userAuthRoutes = require('./routes/userAuthRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -33,13 +35,18 @@ app.use(notifyOnResponse);
 // STATIC FILES
 // ==========================================
 app.use('/admin', express.static(path.join(__dirname, 'public', 'admin')));
+app.use('/user', express.static(path.join(__dirname, 'public', 'user')));
 app.use('/image', express.static(path.join(__dirname, 'public', 'image')));
 
 // ==========================================
 // ROUTES API
 // ==========================================
+const { getSiteConfig } = require('./config/siteConfig');
+app.get('/api/site-config', (req, res) => res.json(getSiteConfig()));
+
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/keys', apiKeyRoutes);
+app.use('/api/user', userAuthRoutes);
 app.use('/api/v5/gopay', gopayRoutes);
 app.use('/api/v5/orderkouta', orderkoutaRoutes);
 app.use('/api/v5/payment', paymentRoutes);
@@ -49,8 +56,11 @@ app.use('/api/v5', cekidRoutes);
 // ==========================================
 // REDIRECTS
 // ==========================================
-app.get('/', (req, res) => res.redirect('/docs'));
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'user', 'index.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html')));
+app.get('/user/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'user', 'dashboard.html')));
+app.get('/user/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'user', 'login.html')));
+app.get('/user/register', (req, res) => res.sendFile(path.join(__dirname, 'public', 'user', 'register.html')));
 
 // ==========================================
 // OPENAPI SPEC
@@ -58,11 +68,11 @@ app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'adm
 const openApiSpec = {
     openapi: '3.1.0',
     info: {
-        title: 'Express Scalar API',
-        description: 'REST API dengan autentikasi API Key.\n\n**Semua endpoint membutuhkan API Key** di header `x-api-key`.\n\nUntuk mendapatkan API Key, silakan hubungi admin langsung di **08xxxx**.\n\n---\n\n## GoPay Merchant\nCek mutasi GoPay Merchant via OTP login + Order QRIS dengan auto-polling.\n\n## OrderKuota\nCek mutasi QRIS OrderKuota via OTP login + Order QRIS dengan auto-polling.\n\n## Payment\nBuat QRIS dinamis dari kode QRIS statis.\n\n## Cek ID Game\nCek username/nickname game online dari User ID.',
+        title: getSiteConfig().siteName || 'Odzreshop API',
+        description: `REST API dengan autentikasi API Key.\n\n**Semua endpoint membutuhkan API Key** di header \`x-api-key\`.\n\nUntuk mendapatkan API Key, silakan hubungi admin langsung di **${getSiteConfig().whatsapp || 'WhatsApp Admin'}**.\n\n---\n\n## GoPay Merchant\nCek mutasi GoPay Merchant via OTP login + Order QRIS dengan auto-polling.\n\n## OrderKuota\nCek mutasi QRIS OrderKuota via OTP login + Order QRIS dengan auto-polling.\n\n## Payment\nBuat QRIS dinamis dari kode QRIS statis.\n\n## Cek ID Game\nCek username/nickname game online dari User ID.`,
         version: '5.1.0'
     },
-    servers: [{ url: `http://localhost:${PORT}`, description: 'Local Development' }],
+    servers: [], // Will be set dynamically per-request
     components: {
         securitySchemes: {
             ApiKeyAuth: {
@@ -213,16 +223,16 @@ const openApiSpec = {
         '/api/v5/orderkouta/order-orkut': {
             post: {
                 tags: ['OrderKuota'], summary: 'Buat Order QRIS',
-                description: 'Buat order QRIS dinamis dan mulai auto-polling mutasi OrderKuota setiap 25 detik. Jika pembayaran ditemukan, status berubah ke PAID dan webhook dikirim (jika diisi).',
+                description: 'Buat order QRIS dinamis dan mulai auto-polling mutasi OrderKuota setiap 25 detik.\n\n**Token otomatis diambil dari data yang tersimpan di dashboard user.** Tidak perlu mengisi username dan auth_token jika sudah setup di halaman OrderKuota.',
                 requestBody: { required: true, content: { 'application/json': { schema: {
-                    type: 'object', required: ['username', 'auth_token', 'nominal', 'code_qris'],
+                    type: 'object', required: ['nominal', 'code_qris'],
                     properties: {
-                        username: { type: 'string', description: 'Username OrderKuota' },
-                        auth_token: { type: 'string', description: 'Token dari get-token-orderkouta' },
                         nominal: { type: 'integer', example: 50000, description: 'Nominal pembayaran (Rupiah)' },
                         code_qris: { type: 'string', description: 'Kode QRIS statis' },
                         expired_minutes: { type: 'integer', default: 30, minimum: 1, maximum: 60, description: 'Masa berlaku order (1-60 menit, default: 30)' },
-                        webhook_url: { type: 'string', description: 'URL webhook untuk menerima callback saat PAID/EXPIRED (opsional)' }
+                        webhook_url: { type: 'string', description: 'URL webhook untuk menerima callback saat PAID/EXPIRED (opsional)' },
+                        username: { type: 'string', description: '(Opsional) Otomatis dari data tersimpan' },
+                        auth_token: { type: 'string', description: '(Opsional) Otomatis dari data tersimpan' }
                     }
                 }}}},
                 responses: {
@@ -249,17 +259,17 @@ const openApiSpec = {
         '/api/v5/gopay/order-gomerchant': {
             post: {
                 tags: ['GoPay Merchant'], summary: 'Buat Order QRIS',
-                description: 'Buat order QRIS dinamis dan mulai auto-polling mutasi GoPay Merchant setiap 25 detik. Token otomatis di-refresh jika expired.',
+                description: 'Buat order QRIS dinamis dan mulai auto-polling mutasi GoPay Merchant setiap 25 detik.\n\n**Token otomatis diambil dari data yang tersimpan di dashboard user.** Tidak perlu mengisi access_token, refresh_token, dan x_uniqueid jika sudah setup di halaman GoPay Merchant.',
                 requestBody: { required: true, content: { 'application/json': { schema: {
-                    type: 'object', required: ['access_token', 'refresh_token', 'nominal', 'code_qris'],
+                    type: 'object', required: ['nominal', 'code_qris'],
                     properties: {
-                        access_token: { type: 'string', description: 'Access token GoPay Merchant' },
-                        refresh_token: { type: 'string', description: 'Refresh token GoPay Merchant' },
-                        x_uniqueid: { type: 'string', description: 'Unique ID (opsional, auto-generate jika kosong)' },
                         nominal: { type: 'integer', example: 50000, description: 'Nominal pembayaran (Rupiah)' },
                         code_qris: { type: 'string', description: 'Kode QRIS statis' },
                         expired_minutes: { type: 'integer', default: 30, minimum: 1, maximum: 60, description: 'Masa berlaku order (1-60 menit, default: 30)' },
-                        webhook_url: { type: 'string', description: 'URL webhook untuk callback (opsional)' }
+                        webhook_url: { type: 'string', description: 'URL webhook untuk callback (opsional)' },
+                        access_token: { type: 'string', description: '(Opsional) Otomatis dari data tersimpan' },
+                        refresh_token: { type: 'string', description: '(Opsional) Otomatis dari data tersimpan' },
+                        x_uniqueid: { type: 'string', description: '(Opsional) Otomatis dari data tersimpan' }
                     }
                 }}}},
                 responses: {
@@ -323,35 +333,56 @@ const openApiSpec = {
     }
 };
 
-app.use('/docs', apiReference({ theme: 'purple', spec: { content: openApiSpec } }));
+app.use('/docs', (req, res, next) => {
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.headers['x-forwarded-host'] || req.get('host');
+    const baseUrl = `${protocol}://${host}`;
+    const dynamicSpec = {
+        ...openApiSpec,
+        servers: [{ url: baseUrl, description: host.includes('localhost') ? 'Local Development' : 'Production' }]
+    };
+    return apiReference({ theme: 'purple', spec: { content: dynamicSpec } })(req, res, next);
+});
 
 // ==========================================
-// SEED DATA
+// SEED DATA (MySQL)
 // ==========================================
 const seedDefaultData = async () => {
     try {
-        const existingAdmin = await getJSON(`admin:${process.env.ADMIN_USERNAME || 'admin'}`);
+        // Seed admin account
+        const existingAdmin = await db.getOne('SELECT id FROM admins WHERE username = ?', [process.env.ADMIN_USERNAME || 'admin']);
         if (!existingAdmin) {
             const salt = await bcrypt.genSalt(10);
             const passwordHash = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'admin123', salt);
-            await setJSON(`admin:${process.env.ADMIN_USERNAME || 'admin'}`, {
-                username: process.env.ADMIN_USERNAME || 'admin', passwordHash, createdAt: new Date().toISOString()
-            });
+            await db.run(
+                'INSERT INTO admins (username, password_hash) VALUES (?, ?)',
+                [process.env.ADMIN_USERNAME || 'admin', passwordHash]
+            );
             console.log('🔐 Admin default berhasil dibuat (admin/admin123)');
-        } else { console.log('🔐 Admin sudah ada, skip seed.'); }
+        } else {
+            console.log('🔐 Admin sudah ada, skip seed.');
+        }
 
-        const { scanKeys } = require('./config/redis');
-        const existingKeys = await scanKeys('apikey:*');
+        // Seed default API key
+        const existingKeys = await db.query('SELECT id FROM api_keys LIMIT 1');
         if (existingKeys.length === 0) {
             const defaultKey = {
-                id: 'default', key: `sk-${uuidv4()}`, label: 'Default Key',
-                active: true, expiredDays: 0, rateLimit: 0, expiresAt: null,
-                usageCount: 0, lastUsed: null, createdAt: new Date().toISOString()
+                id: 'default',
+                key: `sk-${uuidv4()}`,
+                label: 'Default Key',
             };
-            await setJSON('apikey:default', defaultKey);
+            await db.run(
+                'INSERT INTO api_keys (id, `key`, label, active, expired_days, rate_limit, usage_count) VALUES (?, ?, ?, 1, 0, 0, 0)',
+                [defaultKey.id, defaultKey.key, defaultKey.label]
+            );
             console.log(`🔑 API Key default: ${defaultKey.key}`);
-        } else { console.log(`🔑 ${existingKeys.length} API key sudah ada, skip seed.`); }
-    } catch (err) { console.error('⚠️  Error saat seed:', err.message, err.stack); }
+        } else {
+            const keyCount = await db.getOne('SELECT COUNT(*) as cnt FROM api_keys');
+            console.log(`🔑 ${keyCount.cnt} API key sudah ada, skip seed.`);
+        }
+    } catch (err) {
+        console.error('⚠️  Error saat seed:', err.message, err.stack);
+    }
 };
 
 // ==========================================
@@ -359,9 +390,21 @@ const seedDefaultData = async () => {
 // ==========================================
 const startServer = async () => {
     try {
-        const connected = await testConnection();
-        if (!connected) console.error('⚠️  Redis tidak terhubung.');
-        await seedDefaultData();
+        // Init MySQL
+        const dbConnected = await db.testConnection();
+        if (!dbConnected) {
+            console.error('⚠️  MySQL tidak terhubung. Server tetap berjalan tapi fitur DB tidak tersedia.');
+        } else {
+            await db.init();
+        }
+
+        // Init Redis (for orders, sessions, rate limits)
+        const redisConnected = await testRedis();
+        if (!redisConnected) console.error('⚠️  Redis tidak terhubung.');
+
+        // Seed data
+        if (dbConnected) await seedDefaultData();
+
         app.listen(PORT, () => {
             console.log('');
             console.log('══════════════════════════════════════════');
@@ -369,10 +412,13 @@ const startServer = async () => {
             console.log(`  📊 Dashboard   : http://localhost:${PORT}/admin`);
             console.log(`  📚 API Docs    : http://localhost:${PORT}/docs`);
             console.log(`  🔗 API Base    : http://localhost:${PORT}/api/v5/`);
+            console.log(`  🗄️  Database    : MySQL (${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME})`);
             console.log('══════════════════════════════════════════');
             console.log('');
         });
-    } catch (err) { console.error('❌ Gagal start:', err.message, err.stack); }
+    } catch (err) {
+        console.error('❌ Gagal start:', err.message, err.stack);
+    }
 };
 
 startServer();

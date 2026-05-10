@@ -1,12 +1,12 @@
 const { sendResponse } = require('../library/response');
-const { getJSON, setJSON, deleteKey, scanKeys } = require('../config/redis');
+const { setJSON, deleteKey } = require('../config/redis');
+const db = require('../config/database');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const { getSettings, testTelegram, SETTINGS_KEY } = require('../library/notifier');
 
 /**
  * POST /api/admin/login
- * Login admin dan dapatkan session token
  */
 const login = async (req, res) => {
     try {
@@ -16,19 +16,19 @@ const login = async (req, res) => {
             return sendResponse(res, 400, false, 'Username dan password wajib diisi.');
         }
 
-        const admin = await getJSON(`admin:${username}`);
+        const admin = await db.getOne('SELECT * FROM admins WHERE username = ?', [username]);
 
         if (!admin) {
             return sendResponse(res, 401, false, 'Username atau password salah.');
         }
 
-        const isMatch = await bcrypt.compare(password, admin.passwordHash);
+        const isMatch = await bcrypt.compare(password, admin.password_hash);
 
         if (!isMatch) {
             return sendResponse(res, 401, false, 'Username atau password salah.');
         }
 
-        // Buat session token
+        // Buat session token (tetap Redis — TTL-based)
         const token = uuidv4();
         const ttl = parseInt(process.env.SESSION_TTL) || 86400;
 
@@ -50,7 +50,6 @@ const login = async (req, res) => {
 
 /**
  * POST /api/admin/logout
- * Hapus session token
  */
 const logout = async (req, res) => {
     try {
@@ -64,17 +63,16 @@ const logout = async (req, res) => {
 
 /**
  * GET /api/admin/profile
- * Ambil profil admin yang sedang login
  */
 const getProfile = async (req, res) => {
     try {
-        const admin = await getJSON(`admin:${req.admin.username}`);
+        const admin = await db.getOne('SELECT * FROM admins WHERE username = ?', [req.admin.username]);
         if (!admin) {
             return sendResponse(res, 404, false, 'Admin tidak ditemukan.');
         }
         return sendResponse(res, 200, true, 'Profil admin.', {
             username: admin.username,
-            createdAt: admin.createdAt
+            createdAt: admin.created_at
         });
     } catch (err) {
         console.error('[Admin] Profile error:', err.message);
@@ -84,29 +82,19 @@ const getProfile = async (req, res) => {
 
 /**
  * GET /api/admin/stats
- * Dashboard statistics
  */
 const getDashboardStats = async (req, res) => {
     try {
-        const userKeys = await scanKeys('user:*');
-        const apiKeyKeys = await scanKeys('apikey:*');
-
-        // Hitung API key aktif
-        let activeKeys = 0;
-        for (const key of apiKeyKeys) {
-            const data = await getJSON(key);
-            if (data && data.active) activeKeys++;
-        }
-
-        // Hitung total request dari log
-        const { redis } = require('../config/redis');
-        const totalLogs = await redis.llen('requestlogs');
+        const userCount = await db.getOne('SELECT COUNT(*) as cnt FROM users');
+        const apiKeyCount = await db.getOne('SELECT COUNT(*) as cnt FROM api_keys');
+        const activeKeyCount = await db.getOne('SELECT COUNT(*) as cnt FROM api_keys WHERE active = 1');
+        const logCount = await db.getOne('SELECT COUNT(*) as cnt FROM request_logs');
 
         return sendResponse(res, 200, true, 'Dashboard statistics.', {
-            totalUsers: userKeys.length,
-            totalApiKeys: apiKeyKeys.length,
-            activeApiKeys: activeKeys,
-            totalRequests: totalLogs || 0,
+            totalUsers: userCount?.cnt || 0,
+            totalApiKeys: apiKeyCount?.cnt || 0,
+            activeApiKeys: activeKeyCount?.cnt || 0,
+            totalRequests: logCount?.cnt || 0,
             serverUptime: Math.floor(process.uptime()),
             serverStartedAt: new Date(Date.now() - process.uptime() * 1000).toISOString()
         });
@@ -118,13 +106,11 @@ const getDashboardStats = async (req, res) => {
 
 /**
  * GET /api/admin/logs
- * Ambil request logs terbaru
  */
 const getRequestLogs = async (req, res) => {
     try {
-        const { getList } = require('../config/redis');
         const limit = parseInt(req.query.limit) || 50;
-        const logs = await getList('requestlogs', 0, limit - 1);
+        const logs = await db.query('SELECT * FROM request_logs ORDER BY id DESC LIMIT ?', [limit]);
         return sendResponse(res, 200, true, `${logs.length} log terbaru.`, logs);
     } catch (err) {
         console.error('[Admin] Logs error:', err.message);
@@ -134,7 +120,6 @@ const getRequestLogs = async (req, res) => {
 
 /**
  * GET /api/admin/notification-settings
- * Ambil konfigurasi notifikasi
  */
 const getNotificationSettings = async (req, res) => {
     try {
@@ -148,7 +133,6 @@ const getNotificationSettings = async (req, res) => {
 
 /**
  * PUT /api/admin/notification-settings
- * Update konfigurasi notifikasi
  */
 const updateNotificationSettings = async (req, res) => {
     try {
@@ -163,7 +147,11 @@ const updateNotificationSettings = async (req, res) => {
             },
         };
 
-        await setJSON(SETTINGS_KEY, settings);
+        // Upsert into settings table
+        await db.run(
+            'INSERT INTO settings (`key`, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = ?',
+            [SETTINGS_KEY, JSON.stringify(settings), JSON.stringify(settings)]
+        );
         return sendResponse(res, 200, true, 'Notification settings berhasil diupdate.', settings);
     } catch (err) {
         console.error('[Admin] Update notification settings error:', err.message);
@@ -173,7 +161,6 @@ const updateNotificationSettings = async (req, res) => {
 
 /**
  * POST /api/admin/notification-test
- * Test kirim notifikasi ke Telegram
  */
 const testNotification = async (req, res) => {
     try {

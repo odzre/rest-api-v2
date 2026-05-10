@@ -5,8 +5,8 @@ const { sendRequestNotification } = require('../library/notifier');
  * Intercept res.json() untuk menangkap status code dan mengirim notifikasi
  */
 const notifyOnResponse = (req, res, next) => {
-    // Skip untuk static files, docs, dan admin pages
-    const skipPaths = ['/docs', '/admin', '/api/admin', '/image', '/favicon'];
+    // Skip untuk static files, docs, admin/user pages, dan internal endpoints
+    const skipPaths = ['/docs', '/admin', '/user', '/api/admin', '/api/user', '/api/site-config', '/image', '/favicon'];
     if (skipPaths.some(p => req.path.startsWith(p)) || req.path === '/') {
         return next();
     }

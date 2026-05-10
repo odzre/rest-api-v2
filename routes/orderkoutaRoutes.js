@@ -3,6 +3,7 @@ const router = express.Router();
 const orderkoutaController = require('../controllers/orderkoutaController');
 const orderController = require('../controllers/orderController');
 const verifyApiKey = require('../middleware/auth');
+const { injectOrkutTokens } = require('../middleware/tokenInjector');
 
 router.use(verifyApiKey);
 
@@ -10,8 +11,9 @@ router.post('/get-otp-orderkouta', orderkoutaController.requestOtp);
 router.post('/get-token-orderkouta', orderkoutaController.getToken);
 router.post('/get-mutasi-orderkouta', orderkoutaController.getMutasi);
 
-// Order & Callback
-router.post('/order-orkut', orderController.createOrderOrkut);
+// Order & Callback — auto-inject tokens from saved data
+router.post('/order-orkut', injectOrkutTokens, orderController.createOrderOrkut);
 router.get('/status-orkut', orderController.statusOrkut);
 
 module.exports = router;
+
