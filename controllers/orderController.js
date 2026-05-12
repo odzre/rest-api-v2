@@ -17,8 +17,14 @@ const createOrderOrkut = async (req, res) => {
     try {
         const { username, auth_token, nominal, code_qris, expired_minutes, webhook_url } = req.body;
 
-        if (!username || !auth_token || !nominal || !code_qris) {
-            return sendResponse(res, 400, false, 'username, auth_token, nominal, dan code_qris wajib diisi.');
+        if (!nominal || !code_qris) {
+            return sendResponse(res, 400, false, 'nominal dan code_qris wajib diisi.');
+        }
+
+        // Token bisa dari body langsung ATAU dari auto-inject (tokenInjector middleware)
+        if (!username || !auth_token) {
+            return sendResponse(res, 400, false,
+                'Token OrderKuota tidak ditemukan. Masukkan username & auth_token secara manual, atau simpan token di dashboard user terlebih dahulu.');
         }
 
         const amount = parseInt(nominal);
@@ -131,8 +137,14 @@ const createOrderGomerchant = async (req, res) => {
     try {
         const { access_token, refresh_token, nominal, code_qris, x_uniqueid, expired_minutes, webhook_url } = req.body;
 
-        if (!access_token || !refresh_token || !nominal || !code_qris) {
-            return sendResponse(res, 400, false, 'access_token, refresh_token, nominal, dan code_qris wajib diisi.');
+        if (!nominal || !code_qris) {
+            return sendResponse(res, 400, false, 'nominal dan code_qris wajib diisi.');
+        }
+
+        // Token bisa dari body langsung ATAU dari auto-inject (tokenInjector middleware)
+        if (!access_token || !refresh_token) {
+            return sendResponse(res, 400, false,
+                'Token GoPay Merchant tidak ditemukan. Masukkan access_token & refresh_token secara manual, atau simpan token di dashboard user terlebih dahulu.');
         }
 
         const amount = parseInt(nominal);
