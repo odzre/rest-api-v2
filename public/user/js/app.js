@@ -211,8 +211,9 @@ const App={
         const res=await fetch('/api/v5/orderkouta/get-token-orderkouta',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':profile.data.apiKey},body:JSON.stringify({username:this._orkutUsername,otp})});
         const data=await res.json();btn.disabled=false;btn.textContent='Verifikasi OTP';
         if(!data.success)return Toast.error(data.message);
-        const authToken=data.data?.auth_token||data.data?.token;
-        if(!authToken)return Toast.error('auth_token tidak ditemukan di response.');
+        // Support semua kemungkinan path token dari API OrderKuota
+        const authToken=data.data?.auth_token||data.data?.token||data.data?.results?.token;
+        if(!authToken)return Toast.error('auth_token tidak ditemukan di response. Raw: '+JSON.stringify(data.data));
         const saveRes=await UserAuth.apiFetch('/api/user/orderkouta/save-token',{method:'POST',body:JSON.stringify({username:this._orkutUsername,auth_token:authToken})});
         if(saveRes?.success){
             Toast.success('Token OrderKuota berhasil disimpan!');
