@@ -7,14 +7,19 @@ const { decrypt } = require('../library/crypto');
  */
 const injectGopayTokens = async (req, res, next) => {
     try {
-        // Skip if tokens already provided manually
+        // Jika token sudah ada di body, lanjut langsung
         if (req.body.access_token && req.body.refresh_token) return next();
 
         const keyInfo = req.apiKeyInfo;
-        if (!keyInfo || !keyInfo.userId) return next();
+        if (!keyInfo || !keyInfo.userId) return next(); // API key tanpa user — biarkan controller validasi
 
         const tokens = await db.getOne('SELECT * FROM user_tokens WHERE user_id = ?', [keyInfo.userId]);
-        if (!tokens || !tokens.gopay_access_token) return next();
+        if (!tokens || !tokens.gopay_access_token) {
+            // User terdaftar tapi belum simpan token — beri tahu langsung
+            const { sendResponse } = require('../library/response');
+            return sendResponse(res, 400, false,
+                'Token GoPay Merchant belum tersimpan. Silakan login GoPay Merchant di dashboard user dan simpan token terlebih dahulu.');
+        }
 
         // Decrypt and inject
         req.body.access_token = decrypt(tokens.gopay_access_token);
@@ -27,7 +32,7 @@ const injectGopayTokens = async (req, res, next) => {
         next();
     } catch (err) {
         console.error('[AutoInject] GoPay error:', err.message);
-        next(); // Don't block — let controller handle missing tokens
+        next(); // Kalau error teknis, biarkan controller handle
     }
 };
 
@@ -36,13 +41,19 @@ const injectGopayTokens = async (req, res, next) => {
  */
 const injectOrkutTokens = async (req, res, next) => {
     try {
+        // Jika token sudah ada di body, lanjut langsung
         if (req.body.username && req.body.auth_token) return next();
 
         const keyInfo = req.apiKeyInfo;
-        if (!keyInfo || !keyInfo.userId) return next();
+        if (!keyInfo || !keyInfo.userId) return next(); // API key tanpa user — biarkan controller validasi
 
         const tokens = await db.getOne('SELECT * FROM user_tokens WHERE user_id = ?', [keyInfo.userId]);
-        if (!tokens || !tokens.orkut_auth_token) return next();
+        if (!tokens || !tokens.orkut_auth_token) {
+            // User terdaftar tapi belum simpan token — beri tahu langsung
+            const { sendResponse } = require('../library/response');
+            return sendResponse(res, 400, false,
+                'Token OrderKuota belum tersimpan. Silakan login OrderKuota di dashboard user dan simpan token terlebih dahulu.');
+        }
 
         req.body.username = decrypt(tokens.orkut_username);
         req.body.auth_token = decrypt(tokens.orkut_auth_token);
