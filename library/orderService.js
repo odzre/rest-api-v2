@@ -6,6 +6,8 @@ const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const fs = require('fs');
 const QRCode = require('qrcode');
+const db = require('../config/database');
+const { encrypt } = require('./crypto');
 
 const activePollers = new Map();
 const IMAGE_DIR = path.join(__dirname, '..', 'public', 'image');
@@ -192,10 +194,20 @@ async function fetchOrkutMutasi(username, auth_token) {
 function startPollingOrkut(reffid, credentials, expiredMinutes) {
     const { username, auth_token } = credentials;
 
-    const interval = setInterval(async () => {
+    // Named poll function — dipanggil segera (first poll) dan setiap 25 detik
+    const doPoll = async () => {
         try {
             const order = await getOrder(reffid);
-            if (!order || order.status !== 'PENDING') { stopPolling(reffid); return; }
+            if (!order) {
+                console.log(`[Order] ⚠️ Orkut: order ${reffid} tidak ditemukan di Redis, polling dihentikan.`);
+                stopPolling(reffid);
+                return;
+            }
+            if (order.status !== 'PENDING') {
+                console.log(`[Order] ⏹ Orkut: ${reffid} status=${order.status}, polling dihentikan.`);
+                stopPolling(reffid);
+                return;
+            }
 
             console.log(`[Order] 🔄 Polling orkut: ${reffid} (nominal=${order.nominal})`);
             const mutasi = await fetchOrkutMutasi(username, auth_token);
@@ -211,9 +223,9 @@ function startPollingOrkut(reffid, credentials, expiredMinutes) {
                 || mutasi?.qris_history?.data
                 || mutasi?.qris_history
                 || [];
-            
+
             if (!Array.isArray(txList) || txList.length === 0) {
-                console.log(`[Order] ⚠️ No Orkut TX for: ${reffid}, raw=${JSON.stringify(mutasi?.data).slice(0,150)}`);
+                console.log(`[Order] ⚠️ No Orkut TX for: ${reffid}, raw=${JSON.stringify(mutasi?.data).slice(0, 150)}`);
                 return;
             }
 
@@ -231,11 +243,16 @@ function startPollingOrkut(reffid, credentials, expiredMinutes) {
         } catch (err) {
             console.error(`[Order] Orkut poll error ${reffid}:`, err.message);
         }
-    }, 25000);
+    };
 
+    // Jalankan poll pertama SEGERA (tanpa tunggu 25 detik pertama)
+    setImmediate(doPoll);
+
+    // Lanjutkan polling setiap 25 detik
+    const interval = setInterval(doPoll, 25000);
     const timeout = setTimeout(() => handleExpired(reffid), expiredMinutes * 60 * 1000);
     activePollers.set(reffid, { interval, timeout });
-    console.log(`[Order] 🚀 Polling orkut started: ${reffid} (${expiredMinutes}m)`);
+    console.log(`[Order] 🚀 Polling orkut started: ${reffid} (${expiredMinutes}m, interval=25s)`);
 }
 
 // ==========================================
@@ -243,22 +260,32 @@ function startPollingOrkut(reffid, credentials, expiredMinutes) {
 // ==========================================
 const GOBIZ_URL = "https://api.gobiz.co.id";
 
-function gopayHeaders(uniqueId, token) {
+function gopayHeaders(uniqueId, token = null) {
     return {
         "accept": "application/json, text/plain, */*",
+        "accept-encoding": "gzip, deflate, br, zstd",
         "accept-language": "id",
         "authentication-type": "go-id",
-        "authorization": `Bearer ${token}`,
+        "authorization": token ? `Bearer ${token}` : "Bearer",
+        "connection": "keep-alive",
         "content-type": "application/json",
         "gojek-country-code": "ID",
         "gojek-timezone": "Asia/Makassar",
         "host": "api.gobiz.co.id",
         "origin": "https://portal.gofoodmerchant.co.id",
         "referer": "https://portal.gofoodmerchant.co.id/",
+        "sec-ch-ua": '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"Windows"',
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "cross-site",
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
         "x-appid": "go-biz-web-dashboard",
         "x-appversion": "transaction-1.22.0-3d465258",
         "x-deviceos": "Web",
+        "x-phonemake": "Windows 10 64-bit",
+        "x-phonemodel": "Chrome 145.0.0.0 on Windows 10 64-bit",
         "x-platform": "Web",
         "x-uniqueid": uniqueId,
         "x-user-locale": "en-ID",
@@ -266,7 +293,7 @@ function gopayHeaders(uniqueId, token) {
     };
 }
 
-async function gobizPost(path, body, uniqueId, token) {
+async function gobizPost(path, body, uniqueId, token = null) {
     const res = await fetch(`${GOBIZ_URL}${path}`, {
         method: "POST",
         headers: gopayHeaders(uniqueId, token),
@@ -274,6 +301,7 @@ async function gobizPost(path, body, uniqueId, token) {
     });
     return { status: res.status, ok: res.ok, data: await res.json() };
 }
+
 
 const GOPAY_TX_PAYLOAD = {
     from: 0, size: 20,
@@ -295,13 +323,18 @@ async function fetchGopayMutasi(accessToken, refreshToken, uniqueId) {
     const uid = uniqueId || uuidv4();
     let result = await gobizPost("/journals/search", GOPAY_TX_PAYLOAD, uid, accessToken);
 
-    // Auto-refresh if token expired
+    // Auto-refresh jika token expired — sama persis seperti getMutasi di gopayController
     if (result.status === 401 || result.status === 403) {
-        console.log('[Order] GoPay token expired, refreshing...');
+        console.log('[Order] GoPay access token expired, mencoba refresh...');
+
+        // Panggil TANPA token (arg ke-4 tidak diisi) → header "Bearer" (bukan Bearer <expired>)
         const refreshResult = await gobizPost("/goid/token", {
-            client_id: "go-biz-web-new", grant_type: "refresh_token",
+            client_id: "go-biz-web-new",
+            grant_type: "refresh_token",
             data: { refresh_token: refreshToken }
-        }, uid, accessToken); // FIX: token lama wajib dikirim saat refresh
+        }, uid);
+
+        console.log(`[Order] GoPay refresh result: status=${refreshResult.status}, body=${JSON.stringify(refreshResult.data).slice(0, 200)}`);
 
         if (refreshResult.ok && refreshResult.data.access_token) {
             const newToken = refreshResult.data.access_token;
@@ -309,6 +342,10 @@ async function fetchGopayMutasi(accessToken, refreshToken, uniqueId) {
             result = await gobizPost("/journals/search", GOPAY_TX_PAYLOAD, uid, newToken);
             return { result, newTokens: { access_token: newToken, refresh_token: newRefresh } };
         }
+
+        // Refresh juga gagal
+        console.error(`[Order] ❌ GoPay refresh token GAGAL: status=${refreshResult.status}, msg=${JSON.stringify(refreshResult.data)}`);
+        console.error(`[Order] ⚠️ User perlu login ulang GoPay Merchant (OTP) untuk mendapatkan token baru.`);
     }
     return { result, newTokens: null };
 }
@@ -316,10 +353,20 @@ async function fetchGopayMutasi(accessToken, refreshToken, uniqueId) {
 function startPollingGomerchant(reffid, credentials, expiredMinutes) {
     let { access_token, refresh_token, x_uniqueid } = credentials;
 
-    const interval = setInterval(async () => {
+    // Named poll function — dipanggil segera (first poll) dan setiap 25 detik
+    const doPoll = async () => {
         try {
             const order = await getOrder(reffid);
-            if (!order || order.status !== 'PENDING') { stopPolling(reffid); return; }
+            if (!order) {
+                console.log(`[Order] ⚠️ GoPay: order ${reffid} tidak ditemukan di Redis, polling dihentikan.`);
+                stopPolling(reffid);
+                return;
+            }
+            if (order.status !== 'PENDING') {
+                console.log(`[Order] ⏹ GoPay: ${reffid} status=${order.status}, polling dihentikan.`);
+                stopPolling(reffid);
+                return;
+            }
 
             console.log(`[Order] 🔄 Polling gopay: ${reffid} (nominal=${order.nominal})`);
             const { result, newTokens } = await fetchGopayMutasi(access_token, refresh_token, x_uniqueid);
@@ -327,22 +374,42 @@ function startPollingGomerchant(reffid, credentials, expiredMinutes) {
             if (newTokens) {
                 access_token = newTokens.access_token;
                 refresh_token = newTokens.refresh_token;
+
+                // Simpan token baru ke Redis order
                 await updateOrder(reffid, { credentials: { access_token, refresh_token, x_uniqueid } });
+
+                // Simpan token baru ke DB (user_tokens) agar order berikutnya pakai token terbaru
+                if (order._userId) {
+                    try {
+                        await db.run(
+                            `UPDATE user_tokens
+                             SET gopay_access_token = ?, gopay_refresh_token = ?, gopay_saved_at = ?
+                             WHERE user_id = ?`,
+                            [encrypt(access_token), encrypt(refresh_token), new Date(), order._userId]
+                        );
+                        console.log(`[Order] 🔑 GoPay token refreshed & saved to DB for user #${order._userId}`);
+                    } catch (dbErr) {
+                        console.error(`[Order] ⚠️ Gagal simpan token baru ke DB:`, dbErr.message);
+                    }
+                } else {
+                    console.log(`[Order] 🔑 GoPay token refreshed (in-memory only, no userId linked)`);
+                }
             }
 
             if (!result.ok) {
-                console.log(`[Order] ⚠️ GoPay API error: status=${result.status}, body=${JSON.stringify(result.data).slice(0,200)}`);
+                console.log(`[Order] ⚠️ GoPay API error: status=${result.status}, body=${JSON.stringify(result.data).slice(0, 200)}`);
                 return;
             }
 
-            // FIX: GoBiz API mengembalikan { hits: { hits: [...], total: N } }
-            const hits = result.data?.hits?.hits || [];
-            if (!Array.isArray(hits) || hits.length === 0) {
-                console.log(`[Order] ⚠️ GoPay no hits for ${reffid}, raw hits=${JSON.stringify(result.data?.hits)?.slice(0,100)}`);
+            // GoBiz API mengembalikan { hits: { hits: [...], total: N } }
+            const hits = result.data?.hits?.hits || result.data?.hits || [];
+            const hitsArr = Array.isArray(hits) ? hits : [];
+            if (hitsArr.length === 0) {
+                console.log(`[Order] ⚠️ GoPay no hits for ${reffid}, raw=${JSON.stringify(result.data?.hits)?.slice(0, 120)}`);
                 return;
             }
 
-            for (const tx of hits) {
+            for (const tx of hitsArr) {
                 if (tx.status !== 'success' || tx.category !== 'incoming') continue;
 
                 const rawAmt = parseInt(tx.amount || 0);
@@ -365,15 +432,20 @@ function startPollingGomerchant(reffid, credentials, expiredMinutes) {
                     return;
                 }
             }
-            console.log(`[Order] ❌ No match for ${reffid} (nominal=${order.nominal})`);
+            console.log(`[Order] ❌ No match for ${reffid} (nominal=${order.nominal}, total_hits=${hitsArr.length})`);
         } catch (err) {
             console.error(`[Order] Gopay poll error ${reffid}:`, err.message);
         }
-    }, 25000);
+    };
 
+    // Jalankan poll pertama SEGERA (tanpa tunggu 25 detik pertama)
+    setImmediate(doPoll);
+
+    // Lanjutkan polling setiap 25 detik
+    const interval = setInterval(doPoll, 25000);
     const timeout = setTimeout(() => handleExpired(reffid), expiredMinutes * 60 * 1000);
     activePollers.set(reffid, { interval, timeout });
-    console.log(`[Order] 🚀 Polling gopay started: ${reffid} (${expiredMinutes}m)`);
+    console.log(`[Order] 🚀 Polling gopay started: ${reffid} (${expiredMinutes}m, interval=25s)`);
 }
 
 module.exports = {
