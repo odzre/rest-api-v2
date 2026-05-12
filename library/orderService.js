@@ -200,10 +200,20 @@ function startPollingOrkut(reffid, credentials, expiredMinutes) {
             console.log(`[Order] 🔄 Polling orkut: ${reffid} (nominal=${order.nominal})`);
             const mutasi = await fetchOrkutMutasi(username, auth_token);
 
-            const txList = mutasi?.data?.qris_history?.data || mutasi?.data?.qris_history || [];
+            if (!mutasi) {
+                console.log(`[Order] ⚠️ Orkut: response null/non-JSON untuk ${reffid}`);
+                return;
+            }
+
+            // Support berbagai struktur response Orkut API
+            const txList = mutasi?.data?.qris_history?.data
+                || mutasi?.data?.qris_history
+                || mutasi?.qris_history?.data
+                || mutasi?.qris_history
+                || [];
             
             if (!Array.isArray(txList) || txList.length === 0) {
-                console.log(`[Order] ⚠️ No Orkut TX for: ${reffid}`);
+                console.log(`[Order] ⚠️ No Orkut TX for: ${reffid}, raw=${JSON.stringify(mutasi?.data).slice(0,150)}`);
                 return;
             }
 
@@ -291,7 +301,7 @@ async function fetchGopayMutasi(accessToken, refreshToken, uniqueId) {
         const refreshResult = await gobizPost("/goid/token", {
             client_id: "go-biz-web-new", grant_type: "refresh_token",
             data: { refresh_token: refreshToken }
-        }, uid);
+        }, uid, accessToken); // FIX: token lama wajib dikirim saat refresh
 
         if (refreshResult.ok && refreshResult.data.access_token) {
             const newToken = refreshResult.data.access_token;
@@ -321,12 +331,16 @@ function startPollingGomerchant(reffid, credentials, expiredMinutes) {
             }
 
             if (!result.ok) {
-                console.log(`[Order] ⚠️ GoPay API error: status=${result.status}`);
+                console.log(`[Order] ⚠️ GoPay API error: status=${result.status}, body=${JSON.stringify(result.data).slice(0,200)}`);
                 return;
             }
 
-            const hits = result.data?.hits || [];
-            if (!Array.isArray(hits) || hits.length === 0) return;
+            // FIX: GoBiz API mengembalikan { hits: { hits: [...], total: N } }
+            const hits = result.data?.hits?.hits || [];
+            if (!Array.isArray(hits) || hits.length === 0) {
+                console.log(`[Order] ⚠️ GoPay no hits for ${reffid}, raw hits=${JSON.stringify(result.data?.hits)?.slice(0,100)}`);
+                return;
+            }
 
             for (const tx of hits) {
                 if (tx.status !== 'success' || tx.category !== 'incoming') continue;
