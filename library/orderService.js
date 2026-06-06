@@ -218,11 +218,10 @@ function startPollingOrkut(reffid, credentials, expiredMinutes) {
             }
 
             // Support berbagai struktur response Orkut API
-            const txList = mutasi?.data?.qris_history?.data
-                || mutasi?.data?.qris_history
-                || mutasi?.qris_history?.data
-                || mutasi?.qris_history
-                || [];
+            const qh = mutasi?.data?.qris_history || mutasi?.qris_history || {};
+            const txList = qh?.results  // ← struktur aktual: qris_history.results
+                || qh?.data             // fallback: qris_history.data
+                || (Array.isArray(qh) ? qh : []);  // fallback: qris_history langsung array
 
             if (!Array.isArray(txList) || txList.length === 0) {
                 console.log(`[Order] ⚠️ No Orkut TX for: ${reffid}, raw=${JSON.stringify(mutasi?.data).slice(0, 150)}`);
