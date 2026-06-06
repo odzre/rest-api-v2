@@ -230,16 +230,24 @@ function startPollingOrkut(reffid, credentials, expiredMinutes) {
             }
 
             for (const tx of txList) {
-                const rawAmt = tx.jumlah || tx.nominal || tx.amount || '0';
-                const amt = Math.round(parseFloat(String(rawAmt).replace(/[^0-9.]/g, '')) || 0);
+                // Filter: hanya proses transaksi masuk (kredit / status "IN")
+                const txStatus = (tx.status || '').toUpperCase();
+                if (txStatus === 'OUT') continue; // skip transaksi keluar
+
+                // Ambil nominal: prioritaskan kredit (uang masuk), lalu fallback
+                const rawAmt = tx.kredit || tx.jumlah || tx.nominal || tx.amount || '0';
+
+                // Parse: hapus titik pemisah ribuan Indonesia, lalu parse integer
+                const cleaned = String(rawAmt).replace(/\./g, '').replace(/,/g, '.');
+                const amt = Math.round(parseFloat(cleaned) || 0);
 
                 if (amt === order.nominal) {
-                    console.log(`[Order] ✅ PAID orkut! ${reffid} amount=${amt}`);
+                    console.log(`[Order] ✅ PAID orkut! ${reffid} amount=${amt} (raw="${rawAmt}", status="${txStatus}")`);
                     await handlePaid(reffid, order, tx);
                     return;
                 }
             }
-            console.log(`[Order] ❌ No match orkut ${reffid} (nominal=${order.nominal})`);
+            console.log(`[Order] ❌ No match orkut ${reffid} (nominal=${order.nominal}, checked=${txList.length} txs)`);
         } catch (err) {
             console.error(`[Order] Orkut poll error ${reffid}:`, err.message);
         }
