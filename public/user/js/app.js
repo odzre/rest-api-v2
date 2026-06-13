@@ -94,7 +94,7 @@ const App={
         const status=await UserAuth.apiFetch('/api/user/gopay/token-status');
         const hasToken=status?.data?.hasToken;
         el.innerHTML=`<div class="page-content">
-            <div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">STATUS TOKEN GOPAY</div><div class="stat-value" style="font-size:18px;color:${hasToken?'var(--green)':'var(--red)'};">${hasToken?IC.check+' Token Tersimpan':IC.x+' Belum Setup'}</div><div class="stat-sub">${hasToken?'Terakhir disimpan: '+(status.data.savedAt?new Date(status.data.savedAt).toLocaleString('id-ID'):'—'):'Silakan setup token GoPay Merchant Anda'}</div></div>${hasToken?'<button class="btn btn-danger btn-sm" onclick="App.deleteGopayToken()">Hapus Token</button>':''}</div></div>
+            <div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">STATUS TOKEN GOPAY</div><div class="stat-value" style="font-size:18px;color:${hasToken?'var(--green)':'var(--red)'};">${hasToken?'Token Tersimpan':'Belum Setup'}</div><div class="stat-sub">${hasToken?'Terakhir disimpan: '+(status.data.savedAt?new Date(status.data.savedAt).toLocaleString('id-ID'):'—'):'Silakan setup token GoPay Merchant Anda'}</div></div>${hasToken?'<button class="btn btn-danger btn-sm" onclick="App.deleteGopayToken()">Hapus Token</button>':''}</div></div>
             <div class="section-title">${IC.dollar} Setup GoPay Merchant</div>
             <div class="otp-steps"><div class="otp-step active" id="gopayStep1">1. Request OTP</div><div class="otp-step" id="gopayStep2">2. Verifikasi OTP</div><div class="otp-step" id="gopayStep3">3. Simpan Token</div></div>
             <div class="settings-section">
@@ -107,7 +107,7 @@ const App={
                     <button class="btn btn-primary" onclick="App.gopayVerifyOtp()" id="gopayVerifyBtn">Verifikasi OTP</button>
                 </div>
                 <div class="otp-panel" id="gopayPanel3">
-                    <p style="color:var(--green);font-weight:600;margin-bottom:12px">${IC.check} Token berhasil didapatkan dan disimpan!</p>
+                    <p style="color:var(--green);font-weight:600;margin-bottom:12px">Token berhasil didapatkan dan disimpan!</p>
                     <p style="color:var(--text-muted);font-size:13px">Token GoPay Merchant Anda telah dienkripsi dan tersimpan dengan aman. Anda sekarang bisa menggunakan endpoint order tanpa memasukkan token manual.</p>
                 </div>
             </div>
@@ -167,7 +167,7 @@ const App={
         const status=await UserAuth.apiFetch('/api/user/orderkouta/token-status');
         const hasToken=status?.data?.hasToken;
         el.innerHTML=`<div class="page-content">
-            <div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">STATUS TOKEN ORDERKOUTA</div><div class="stat-value" style="font-size:18px;color:${hasToken?'var(--green)':'var(--red)'};">${hasToken?IC.check+' Token Tersimpan':IC.x+' Belum Setup'}</div><div class="stat-sub">${hasToken?'Terakhir disimpan: '+(status.data.savedAt?new Date(status.data.savedAt).toLocaleString('id-ID'):'—'):'Silakan setup token OrderKuota Anda'}</div></div>${hasToken?'<button class="btn btn-danger btn-sm" onclick="App.deleteOrkutToken()">Hapus Token</button>':''}</div></div>
+            <div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">STATUS TOKEN ORDERKOUTA</div><div class="stat-value" style="font-size:18px;color:${hasToken?'var(--green)':'var(--red)'};">${hasToken?'Token Tersimpan':'Belum Setup'}</div><div class="stat-sub">${hasToken?'Terakhir disimpan: '+(status.data.savedAt?new Date(status.data.savedAt).toLocaleString('id-ID'):'—'):'Silakan setup token OrderKuota Anda'}</div></div>${hasToken?'<button class="btn btn-danger btn-sm" onclick="App.deleteOrkutToken()">Hapus Token</button>':''}</div></div>
             <div class="section-title">${IC.chart} Setup OrderKuota</div>
             <div class="otp-steps"><div class="otp-step active" id="orkutStep1">1. Login</div><div class="otp-step" id="orkutStep2">2. Verifikasi OTP</div><div class="otp-step" id="orkutStep3">3. Simpan Token</div></div>
             <div class="settings-section">
@@ -181,7 +181,7 @@ const App={
                     <button class="btn btn-primary" onclick="App.orkutVerifyOtp()" id="orkutVerifyBtn">Verifikasi OTP</button>
                 </div>
                 <div class="otp-panel" id="orkutPanel3">
-                    <p style="color:var(--green);font-weight:600;margin-bottom:12px">${IC.check} Token berhasil didapatkan dan disimpan!</p>
+                    <p style="color:var(--green);font-weight:600;margin-bottom:12px">Token berhasil didapatkan dan disimpan!</p>
                     <p style="color:var(--text-muted);font-size:13px">Token OrderKuota Anda telah dienkripsi dan tersimpan. Anda bisa menggunakan endpoint order tanpa memasukkan token manual.</p>
                 </div>
             </div>
@@ -242,7 +242,7 @@ const App={
                 <div class="form-group"><label class="form-label">Nama</label><input class="form-input" id="setName" value="${u.name}"></div>
                 <div class="form-group"><label class="form-label">Email</label><input class="form-input" value="${u.email}" disabled style="opacity:0.6"></div>
                 <div class="form-group"><label class="form-label">Nomor WhatsApp</label><input class="form-input" id="setWa" value="${u.whatsapp||''}"></div>
-                <div class="form-group"><label class="form-label">API Key</label><div style="display:flex;gap:8px;align-items:center"><input class="form-input" value="${u.apiKey}" disabled style="font-family:var(--font-mono);opacity:0.8"><button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText('${u.apiKey}');Toast.success('API Key disalin!')">${IC.copy}</button></div><div class="form-hint">${u.apiKeyActive?'<span style="color:var(--green)">'+IC.check+' Aktif</span>':'<span style="color:var(--red)">'+IC.x+' Tidak aktif — Beli paket langganan untuk mengaktifkan</span>'}</div></div>
+                <div class="form-group"><label class="form-label">API Key</label><div style="display:flex;gap:8px;align-items:center"><input class="form-input" value="${u.apiKey}" disabled style="font-family:var(--font-mono);opacity:0.8"><button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText('${u.apiKey}');Toast.success('API Key disalin!')">${IC.copy}</button></div><div class="form-hint">${u.apiKeyActive?'<span style="color:var(--green)">Aktif</span>':'<span style="color:var(--red)">Tidak aktif — Beli paket langganan untuk mengaktifkan</span>'}</div></div>
                 <button class="btn btn-primary" onclick="App.saveProfile()" id="saveProfileBtn">Simpan Profil</button>
             </div>
             <div class="settings-section">
