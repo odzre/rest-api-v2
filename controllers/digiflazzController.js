@@ -38,7 +38,7 @@ function digiHeaders(csrfToken, referer) {
 // ==========================================
 const getSessionStatus = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.userId;
         const tokens = await db.getOne('SELECT digi_cookie, digi_saved_at FROM user_tokens WHERE user_id = ?', [userId]);
 
         if (!tokens || !tokens.digi_cookie) {
@@ -92,7 +92,7 @@ const login = async (req, res) => {
 
         // Save temp cookie for 2FA step
         const tempCookie = JSON.stringify(jar.toJSON());
-        const userId = req.user.id;
+        const userId = req.user.userId;
 
         await db.run(
             `INSERT INTO user_tokens (user_id, digi_cookie) VALUES (?, ?) ON DUPLICATE KEY UPDATE digi_cookie = ?`,
@@ -117,7 +117,7 @@ const verify2fa = async (req, res) => {
         const { code } = req.body;
         if (!code) return sendResponse(res, 400, false, 'Kode 2FA wajib diisi.');
 
-        const userId = req.user.id;
+        const userId = req.user.userId;
         const tokens = await db.getOne('SELECT digi_cookie FROM user_tokens WHERE user_id = ?', [userId]);
         if (!tokens?.digi_cookie) return sendResponse(res, 400, false, 'Sesi login tidak ditemukan. Silakan login ulang.');
 
@@ -164,7 +164,7 @@ const verify2fa = async (req, res) => {
 // ==========================================
 const logout = async (req, res) => {
     try {
-        await db.run('UPDATE user_tokens SET digi_cookie = NULL, digi_saved_at = NULL WHERE user_id = ?', [req.user.id]);
+        await db.run('UPDATE user_tokens SET digi_cookie = NULL, digi_saved_at = NULL WHERE user_id = ?', [req.user.userId]);
         return sendResponse(res, 200, true, 'Logout Digiflazz berhasil.');
     } catch (err) {
         console.error('[Digiflazz] Logout error:', err.message);
@@ -177,7 +177,7 @@ const logout = async (req, res) => {
 // ==========================================
 const fetchDigiData = (endpoint) => async (req, res) => {
     try {
-        const tokens = await db.getOne('SELECT digi_cookie FROM user_tokens WHERE user_id = ?', [req.user.id]);
+        const tokens = await db.getOne('SELECT digi_cookie FROM user_tokens WHERE user_id = ?', [req.user.userId]);
         if (!tokens?.digi_cookie) return sendResponse(res, 401, false, 'Belum login Digiflazz.');
 
         const { client, jar } = createClient(tokens.digi_cookie);
@@ -190,7 +190,7 @@ const fetchDigiData = (endpoint) => async (req, res) => {
         return sendResponse(res, 200, true, 'OK', response.data.data);
     } catch (err) {
         if (err.response?.status === 401) {
-            await db.run('UPDATE user_tokens SET digi_cookie = NULL, digi_saved_at = NULL WHERE user_id = ?', [req.user.id]);
+            await db.run('UPDATE user_tokens SET digi_cookie = NULL, digi_saved_at = NULL WHERE user_id = ?', [req.user.userId]);
             return sendResponse(res, 401, false, 'Session expired. Silakan login ulang.');
         }
         console.error(`[Digiflazz] Fetch ${endpoint} error:`, err.message);
@@ -207,7 +207,7 @@ const getTypes = fetchDigiData('type');
 // ==========================================
 const getProducts = async (req, res) => {
     try {
-        const tokens = await db.getOne('SELECT digi_cookie FROM user_tokens WHERE user_id = ?', [req.user.id]);
+        const tokens = await db.getOne('SELECT digi_cookie FROM user_tokens WHERE user_id = ?', [req.user.userId]);
         if (!tokens?.digi_cookie) return sendResponse(res, 401, false, 'Belum login Digiflazz.');
 
         const { client, jar } = createClient(tokens.digi_cookie);
@@ -220,7 +220,7 @@ const getProducts = async (req, res) => {
         return sendResponse(res, 200, true, 'OK', response.data.data);
     } catch (err) {
         if (err.response?.status === 401) {
-            await db.run('UPDATE user_tokens SET digi_cookie = NULL, digi_saved_at = NULL WHERE user_id = ?', [req.user.id]);
+            await db.run('UPDATE user_tokens SET digi_cookie = NULL, digi_saved_at = NULL WHERE user_id = ?', [req.user.userId]);
             return sendResponse(res, 401, false, 'Session expired.');
         }
         console.error('[Digiflazz] Get products error:', err.message);
@@ -255,7 +255,7 @@ function generateProductCode(productName) {
 // ==========================================
 const executeUpdate = async (req, res) => {
     try {
-        const tokens = await db.getOne('SELECT digi_cookie FROM user_tokens WHERE user_id = ?', [req.user.id]);
+        const tokens = await db.getOne('SELECT digi_cookie FROM user_tokens WHERE user_id = ?', [req.user.userId]);
         if (!tokens?.digi_cookie) {
             return res.status(401).json({ success: false, message: 'Belum login Digiflazz.' });
         }
