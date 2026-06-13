@@ -258,11 +258,11 @@ const App={
 
     async _renderDigiConfig(el,profile){
         el.innerHTML=`<div class="page-content">
-            <div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">SESI DIGIFLAZZ AKTIF</div><div class="stat-value" style="font-size:18px;color:var(--green)">🏢 ${profile.companyName||'—'}</div><div class="stat-sub">👤 ${profile.userName||'—'} • 💰 Saldo: Rp ${(profile.balance||0).toLocaleString('id-ID')}</div></div><button class="btn btn-danger btn-sm" onclick="App.digiLogout()">Logout</button></div></div>
+            <div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">SESI DIGIFLAZZ AKTIF</div><div class="stat-value" style="font-size:18px;color:var(--green)">${profile.companyName||'—'}</div><div class="stat-sub">${profile.userName||'—'} • Saldo: Rp ${(profile.balance||0).toLocaleString('id-ID')}</div></div><button class="btn btn-danger btn-sm" onclick="App.digiLogout()">Logout</button></div></div>
             <div class="section-title">${IC.chart} Konfigurasi Update Seller</div>
             <div class="settings-section" id="digiConfigSection"><div class="skeleton" style="height:100px"></div></div>
             <div id="digiTerminalWrap" style="display:none">
-                <div class="section-title">📋 Log Eksekusi</div>
+                <div class="section-title">${IC.chart} Log Eksekusi</div>
                 <div class="digi-terminal" id="digiTerminal"></div>
             </div>
         </div>`;
@@ -286,14 +286,14 @@ const App={
                 <div class="searchable-dd multi" id="ddType"><input class="form-input dd-search" placeholder="Cari type..." oninput="App._filterDDMulti('ddType',App._digiTypes,this.value)" onfocus="App._showDDMulti('ddType')"><div class="dd-tags" id="ddTypeTags"></div><div class="dd-list"></div></div></div>
             <div class="form-row">
                 <div class="form-group"><label class="form-label">Minimal Rating</label><input class="form-input" id="digiRating" type="number" step="0.1" min="0" max="5" value="0" placeholder="0"><div class="form-hint">0 = semua rating</div></div>
-                <div class="form-group"><label class="form-label">Harga Seller</label><select class="form-input" id="digiSort"><option value="termurah">💰 Termurah</option><option value="termahal">💎 Termahal</option><option value="random">🎲 Random Pick</option></select></div>
+                <div class="form-group"><label class="form-label">Harga Seller</label><select class="form-input" id="digiSort"><option value="termurah">Termurah</option><option value="termahal">Termahal</option><option value="random">Random Pick</option></select></div>
             </div>
             <div class="form-group" style="display:flex;flex-direction:column;gap:10px">
                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="digiAutoCode" checked> <span>Auto-Generate Kode Produk</span></label>
                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="digiAutoMax" checked> <span>Max Price mengikuti harga Seller</span></label>
             </div>
-            <button class="btn btn-primary" onclick="App.digiExecute()" id="digiExecBtn">🚀 Jalankan Update</button>
-            <button class="btn btn-danger" onclick="App.digiStop()" id="digiStopBtn" style="display:none;margin-left:8px">⏹ Stop</button>`;
+            <button class="btn btn-primary" onclick="App.digiExecute()" id="digiExecBtn">Jalankan Update</button>
+            <button class="btn btn-danger" onclick="App.digiStop()" id="digiStopBtn" style="display:none;margin-left:8px">Stop</button>`;
         // Init dropdowns
         this._filterDD('ddCategory',this._digiCats,'');
         this._filterDD('ddBrand',this._digiBrands,'');
