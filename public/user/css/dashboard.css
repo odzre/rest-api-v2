@@ -230,7 +230,7 @@ tbody tr:last-child td { border-bottom: none; }
 .stat-value svg { width: 22px; height: 22px; display: inline; vertical-align: text-bottom; }
 
 /* LANDING PAGE */
-.landing-page { min-height: 100vh; }
+.landing-page { min-height: 100vh; overflow-x: hidden; }
 .landing-nav { padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: rgba(10,10,15,0.9); backdrop-filter: blur(12px); z-index: 50; border-bottom: 1px solid var(--border); }
 .landing-nav-links { display: flex; gap: 12px; align-items: center; }
 
