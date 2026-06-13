@@ -93,11 +93,24 @@ async function init() {
                 duration_days INT NOT NULL,
                 description TEXT,
                 benefits JSON,
+                rate_limit INT DEFAULT 0,
                 active TINYINT(1) DEFAULT 1,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         `);
+
+        // Safe migration: tambah kolom rate_limit jika belum ada (untuk database lama)
+        try {
+            await conn.query('ALTER TABLE subscription_plans ADD COLUMN rate_limit INT DEFAULT 0 AFTER benefits');
+            console.log('   ✅ Kolom rate_limit berhasil ditambahkan ke subscription_plans.');
+        } catch(e) {
+            if (e.code === 'ER_DUP_FIELDNAME' || e.message.includes('Duplicate column')) {
+                // Kolom sudah ada, skip
+            } else {
+                console.error('   ⚠️ ALTER TABLE subscription_plans error:', e.message);
+            }
+        }
 
         await conn.query(`
             CREATE TABLE IF NOT EXISTS user_tokens (
