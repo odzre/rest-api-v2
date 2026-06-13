@@ -110,6 +110,9 @@ body { font-family: var(--font); background: var(--bg-primary); color: var(--tex
 .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
 
 /* TABLES */
+.search-bar { margin-bottom: 16px; }
+.search-bar .form-input { background: var(--bg-secondary); border: 1px solid var(--border); padding: 10px 16px; font-size: 14px; border-radius: var(--radius-sm); width: 100%; max-width: 400px; transition: var(--transition); }
+.search-bar .form-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-dim); }
 .table-container { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .table-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
 .table-title { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }

@@ -97,9 +97,14 @@ const App = {
             el.innerHTML = `<div class="table-container"><div class="empty-state">${IC.key}<p>Belum ada API key. Buat key pertamamu!</p></div></div>`;
             return;
         }
-        // Simpan data keys untuk edit modal
         this._keysData = res.data;
-        el.innerHTML = `<div class="table-container page-content"><div class="table-scroll-wrapper"><table><thead><tr><th>Label</th><th>Key</th><th>Status</th><th>Expired</th><th>Rate Limit</th><th>Penggunaan</th><th>Aksi</th></tr></thead><tbody>${res.data.map(k => {
+        this._renderApiKeysTable(res.data);
+    },
+    _renderApiKeysTable(data, query) {
+        const el = document.getElementById('pageContent');
+        const filtered = query ? data.filter(k => k.label.toLowerCase().includes(query) || k.key.toLowerCase().includes(query)) : data;
+        el.innerHTML = `<div class="search-bar"><input class="form-input" id="searchKeys" placeholder="Cari label atau key..." value="${query||''}" oninput="App._renderApiKeysTable(App._keysData,this.value.toLowerCase())"></div>
+        <div class="table-container page-content"><div class="table-scroll-wrapper"><table><thead><tr><th>Label</th><th>Key</th><th>Status</th><th>Expired</th><th>Rate Limit</th><th>Penggunaan</th><th>Aksi</th></tr></thead><tbody>${filtered.length===0?'<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:32px">Tidak ada hasil ditemukan</td></tr>':filtered.map(k => {
             const expText = k.expiredDays > 0 ? (k.isExpired ? `<span class="badge badge-red">Expired</span>` : `${k.expiredDays} hari`) : '<span class="badge badge-green">Unlimited</span>';
             const rlText = k.rateLimit > 0 ? `${k.rateLimit}/hari` : '<span class="badge badge-green">Unlimited</span>';
             return `<tr>
@@ -116,6 +121,7 @@ const App = {
                     <button class="btn btn-danger btn-sm" onclick="App.deleteKey('${k.id}','${k.label}')" title="Hapus">${IC.trash}</button>
                 </td></tr>`;
         }).join('')}</tbody></table></div></div>`;
+        if(query!==undefined){const inp=document.getElementById('searchKeys');if(inp){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);}}
     },
 
     showCreateKeyModal() {
@@ -387,9 +393,7 @@ const App = {
             btn.disabled = false;
             btn.innerHTML = `${IC.send} Test Kirim`;
         }
-    },
-
-    // LANGGANAN MANAGEMENT
+    },    // LANGGANAN MANAGEMENT
     async renderLangganan() {
         const el = document.getElementById('pageContent');
         document.getElementById('headerActions').innerHTML = `<button class="btn btn-primary" onclick="App.showCreatePlanModal()">${IC.plus} Buat Paket</button>`;
@@ -397,25 +401,35 @@ const App = {
         const res = await Auth.apiFetch('/api/admin/subscription-plans');
         if (!res?.success || !res.data.length) { el.innerHTML = '<div class="table-container"><div class="empty-state"><p>Belum ada paket langganan.</p></div></div>'; return; }
         this._plansData = res.data;
-        el.innerHTML = `<div class="table-container page-content"><div class="table-scroll-wrapper"><table><thead><tr><th>Nama</th><th>Harga</th><th>Durasi</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${res.data.map(p => `<tr>
+        this._renderLanggananTable(res.data);
+    },
+    _renderLanggananTable(data, query) {
+        const el = document.getElementById('pageContent');
+        const filtered = query ? data.filter(p => p.name.toLowerCase().includes(query)) : data;
+        el.innerHTML = `<div class="search-bar"><input class="form-input" id="searchPlans" placeholder="Cari nama paket..." value="${query||''}" oninput="App._renderLanggananTable(App._plansData,this.value.toLowerCase())"></div>
+        <div class="table-container page-content"><div class="table-scroll-wrapper"><table><thead><tr><th>Nama</th><th>Harga</th><th>Durasi</th><th>Rate Limit</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${filtered.length===0?'<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px">Tidak ada hasil ditemukan</td></tr>':filtered.map(p => `<tr>
             <td style="font-weight:600">${p.name}</td>
             <td>Rp ${p.price.toLocaleString('id-ID')}</td>
             <td>${p.duration_days} hari</td>
+            <td>${(p.rate_limit||0) > 0 ? `${p.rate_limit}/hari` : '<span class="badge badge-green">Unlimited</span>'}</td>
             <td><span class="badge ${p.active?'badge-green':'badge-red'}">${p.active?'Aktif':'Nonaktif'}</span></td>
-            <td><button class="btn btn-secondary btn-sm" onclick="App.showEditPlanModal(${p.id})">${IC.edit}</button> <button class="btn btn-danger btn-sm" onclick="App.deletePlan(${p.id},'${p.name.replace(/'/g,"\\'")}')">${IC.trash}</button></td>
+            <td><button class="btn btn-secondary btn-sm" onclick="App.showEditPlanModal(${p.id})">${IC.edit}</button> <button class="btn btn-danger btn-sm" onclick="App.deletePlan(${p.id},'${p.name.replace(/'/g,"\\\'")}')">${IC.trash}</button></td>
         </tr>`).join('')}</tbody></table></div></div>`;
+        if(query!==undefined){const inp=document.getElementById('searchPlans');if(inp){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);}}
     },
     showCreatePlanModal() {
         this.showModal('Buat Paket Langganan', `
             <div class="form-group"><label class="form-label">Nama Paket</label><input class="form-input" id="planName" placeholder="Contoh: Starter" autofocus></div>
             <div class="form-row"><div class="form-group"><label class="form-label">Harga (Rp)</label><input class="form-input" id="planPrice" type="number" placeholder="50000"></div>
             <div class="form-group"><label class="form-label">Durasi (Hari)</label><input class="form-input" id="planDays" type="number" placeholder="30"></div></div>
+            <div class="form-group"><label class="form-label">Rate Limit / Hari</label><input class="form-input" id="planRateLimit" type="number" min="0" value="0" placeholder="0"><div class="form-hint">0 = unlimited request per hari</div></div>
             <div class="form-group"><label class="form-label">Deskripsi</label><input class="form-input" id="planDesc" placeholder="Deskripsi paket"></div>
             <div class="form-group"><label class="form-label">Benefits (pisah koma)</label><input class="form-input" id="planBenefits" placeholder="1000 req/hari, Auto-polling, Webhook"></div>`, async () => {
             const name=document.getElementById('planName').value.trim();const price=document.getElementById('planPrice').value;const duration_days=document.getElementById('planDays').value;
             if (!name||!price||!duration_days) return Toast.error('Semua field wajib diisi!');
+            const rate_limit=parseInt(document.getElementById('planRateLimit').value)||0;
             const benefits=document.getElementById('planBenefits').value.split(',').map(b=>b.trim()).filter(Boolean);
-            const r=await Auth.apiFetch('/api/admin/subscription-plans',{method:'POST',body:JSON.stringify({name,price,duration_days,description:document.getElementById('planDesc').value.trim(),benefits})});
+            const r=await Auth.apiFetch('/api/admin/subscription-plans',{method:'POST',body:JSON.stringify({name,price,duration_days,description:document.getElementById('planDesc').value.trim(),benefits,rate_limit})});
             if(r?.success){Toast.success('Paket berhasil dibuat!');this.closeModal();this.renderLangganan();}else Toast.error(r?.message||'Gagal');
         });
     },
@@ -425,10 +439,12 @@ const App = {
             <div class="form-group"><label class="form-label">Nama</label><input class="form-input" id="planName" value="${p.name}"></div>
             <div class="form-row"><div class="form-group"><label class="form-label">Harga</label><input class="form-input" id="planPrice" type="number" value="${p.price}"></div>
             <div class="form-group"><label class="form-label">Durasi (Hari)</label><input class="form-input" id="planDays" type="number" value="${p.duration_days}"></div></div>
+            <div class="form-group"><label class="form-label">Rate Limit / Hari</label><input class="form-input" id="planRateLimit" type="number" min="0" value="${p.rate_limit||0}"><div class="form-hint">0 = unlimited. Perubahan otomatis diterapkan ke semua user aktif di paket ini.</div></div>
             <div class="form-group"><label class="form-label">Deskripsi</label><input class="form-input" id="planDesc" value="${p.description||''}"></div>
             <div class="form-group"><label class="form-label">Benefits</label><input class="form-input" id="planBenefits" value="${(p.benefits||[]).join(', ')}"></div>`, async () => {
-            const r=await Auth.apiFetch(`/api/admin/subscription-plans/${id}`,{method:'PUT',body:JSON.stringify({name:document.getElementById('planName').value.trim(),price:document.getElementById('planPrice').value,duration_days:document.getElementById('planDays').value,description:document.getElementById('planDesc').value.trim(),benefits:document.getElementById('planBenefits').value.split(',').map(b=>b.trim()).filter(Boolean)})});
-            if(r?.success){Toast.success('Paket diupdate!');this.closeModal();this.renderLangganan();}else Toast.error(r?.message||'Gagal');
+            const rate_limit=parseInt(document.getElementById('planRateLimit').value)||0;
+            const r=await Auth.apiFetch(`/api/admin/subscription-plans/${id}`,{method:'PUT',body:JSON.stringify({name:document.getElementById('planName').value.trim(),price:document.getElementById('planPrice').value,duration_days:document.getElementById('planDays').value,description:document.getElementById('planDesc').value.trim(),benefits:document.getElementById('planBenefits').value.split(',').map(b=>b.trim()).filter(Boolean),rate_limit})});
+            if(r?.success){Toast.success(r.message);this.closeModal();this.renderLangganan();}else Toast.error(r?.message||'Gagal');
         });
     },
     async deletePlan(id,name){if(!confirm(`Hapus paket "${name}"?`))return;const r=await Auth.apiFetch(`/api/admin/subscription-plans/${id}`,{method:'DELETE'});if(r?.success){Toast.success('Paket dihapus!');this.renderLangganan();}},
@@ -440,7 +456,14 @@ const App = {
         const [usersRes, plansRes] = await Promise.all([Auth.apiFetch('/api/admin/users-list'), Auth.apiFetch('/api/admin/subscription-plans')]);
         if (!usersRes?.success || !usersRes.data.length) { el.innerHTML = '<div class="table-container"><div class="empty-state"><p>Belum ada user terdaftar.</p></div></div>'; return; }
         this._userPlans = plansRes?.data || [];
-        el.innerHTML = `<div class="table-container page-content"><div class="table-scroll-wrapper"><table><thead><tr><th>Nama</th><th>Email</th><th>API Key</th><th>Status</th><th>Expired</th><th>Aksi</th></tr></thead><tbody>${usersRes.data.map(u => {
+        this._usersData = usersRes.data;
+        this._renderUsersTable(usersRes.data);
+    },
+    _renderUsersTable(data, query) {
+        const el = document.getElementById('pageContent');
+        const filtered = query ? data.filter(u => u.name.toLowerCase().includes(query) || u.email.toLowerCase().includes(query) || u.apiKey.toLowerCase().includes(query)) : data;
+        el.innerHTML = `<div class="search-bar"><input class="form-input" id="searchUsers" placeholder="Cari nama, email, atau API key..." value="${query||''}" oninput="App._renderUsersTable(App._usersData,this.value.toLowerCase())"></div>
+        <div class="table-container page-content"><div class="table-scroll-wrapper"><table><thead><tr><th>Nama</th><th>Email</th><th>API Key</th><th>Status</th><th>Expired</th><th>Aksi</th></tr></thead><tbody>${filtered.length===0?'<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px">Tidak ada hasil ditemukan</td></tr>':filtered.map(u => {
             const exp = u.subscriptionExpiresAt ? new Date(u.subscriptionExpiresAt).toLocaleDateString('id-ID') : '—';
             return `<tr>
             <td style="font-weight:600">${u.name}<br><span style="font-size:11px;color:var(--text-muted)">${u.whatsapp||''}</span></td>
@@ -448,11 +471,12 @@ const App = {
             <td><span class="key-text">${u.apiKey}</span></td>
             <td><span class="badge ${u.apiKeyActive?'badge-green':'badge-red'}">${u.apiKeyActive?'Aktif':'Nonaktif'}</span></td>
             <td style="font-size:12px">${exp}</td>
-            <td style="white-space:nowrap">${u.apiKeyActive?`<button class="btn btn-danger btn-sm" onclick="App.deactivateUser(${u.id},'${u.name.replace(/'/g,"\\'")}')">Nonaktifkan</button>`:`<button class="btn btn-primary btn-sm" onclick="App.showActivateModal(${u.id},'${u.name.replace(/'/g,"\\'")}')">Aktifkan</button>`}</td>
+            <td style="white-space:nowrap">${u.apiKeyActive?`<button class="btn btn-danger btn-sm" onclick="App.deactivateUser(${u.id},'${u.name.replace(/'/g,"\\\'")}')">Nonaktifkan</button>`:`<button class="btn btn-primary btn-sm" onclick="App.showActivateModal(${u.id},'${u.name.replace(/'/g,"\\\'")}')">Aktifkan</button>`}</td>
         </tr>`}).join('')}</tbody></table></div></div>`;
+        if(query!==undefined){const inp=document.getElementById('searchUsers');if(inp){inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);}}
     },
     showActivateModal(userId, userName) {
-        const opts = (this._userPlans||[]).map(p => `<option value="${p.id}">${p.name} — Rp ${p.price.toLocaleString('id-ID')} (${p.duration_days} hari)</option>`).join('');
+        const opts = (this._userPlans||[]).map(p => `<option value="${p.id}">${p.name} — Rp ${p.price.toLocaleString('id-ID')} (${p.duration_days} hari${(p.rate_limit||0)>0?', '+p.rate_limit+' req/hari':', unlimited'})</option>`).join('');
         this.showModal(`Aktifkan ${userName}`, `<div class="form-group"><label class="form-label">Pilih Paket</label><select class="form-input" id="activatePlan">${opts}</select></div>`, async () => {
             const planId = document.getElementById('activatePlan').value;
             const r = await Auth.apiFetch('/api/admin/activate-subscription', { method: 'POST', body: JSON.stringify({ userId, planId }) });

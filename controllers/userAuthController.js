@@ -506,14 +506,14 @@ const adminGetPlans = async (req, res) => {
 /** POST /api/admin/subscription-plans */
 const adminCreatePlan = async (req, res) => {
     try {
-        const { name, price, duration_days, description, benefits } = req.body;
+        const { name, price, duration_days, description, benefits, rate_limit } = req.body;
         if (!name || !price || !duration_days) {
             return sendResponse(res, 400, false, 'name, price, dan duration_days wajib diisi.');
         }
 
         const result = await db.run(
-            'INSERT INTO subscription_plans (name, price, duration_days, description, benefits, active) VALUES (?, ?, ?, ?, ?, 1)',
-            [name, parseInt(price), parseInt(duration_days), description || '', JSON.stringify(benefits || [])]
+            'INSERT INTO subscription_plans (name, price, duration_days, description, benefits, rate_limit, active) VALUES (?, ?, ?, ?, ?, ?, 1)',
+            [name, parseInt(price), parseInt(duration_days), description || '', JSON.stringify(benefits || []), parseInt(rate_limit) || 0]
         );
 
         const plan = await db.getOne('SELECT * FROM subscription_plans WHERE id = ?', [result.insertId]);
@@ -532,23 +532,37 @@ const adminUpdatePlan = async (req, res) => {
         const plan = await db.getOne('SELECT * FROM subscription_plans WHERE id = ?', [id]);
         if (!plan) return sendResponse(res, 404, false, 'Paket tidak ditemukan.');
 
-        const { name, price, duration_days, description, benefits, active } = req.body;
+        const { name, price, duration_days, description, benefits, active, rate_limit } = req.body;
+        const newRateLimit = rate_limit !== undefined ? parseInt(rate_limit) : (plan.rate_limit || 0);
+
         await db.run(
-            'UPDATE subscription_plans SET name = ?, price = ?, duration_days = ?, description = ?, benefits = ?, active = ? WHERE id = ?',
+            'UPDATE subscription_plans SET name = ?, price = ?, duration_days = ?, description = ?, benefits = ?, rate_limit = ?, active = ? WHERE id = ?',
             [
                 name !== undefined ? name : plan.name,
                 price !== undefined ? parseInt(price) : plan.price,
                 duration_days !== undefined ? parseInt(duration_days) : plan.duration_days,
                 description !== undefined ? description : plan.description,
                 benefits !== undefined ? JSON.stringify(benefits) : (typeof plan.benefits === 'string' ? plan.benefits : JSON.stringify(plan.benefits || [])),
+                newRateLimit,
                 active !== undefined ? (active ? 1 : 0) : plan.active,
                 id
             ]
         );
 
+        // Auto-apply: update rate_limit ke semua API key user yang pakai plan ini
+        await db.run(
+            'UPDATE api_keys SET rate_limit = ? WHERE id IN (SELECT CONCAT(\'user-\', id) FROM users WHERE subscription_plan_id = ? AND api_key_active = 1)',
+            [newRateLimit, id]
+        );
+
         const updated = await db.getOne('SELECT * FROM subscription_plans WHERE id = ?', [id]);
         updated.benefits = typeof updated.benefits === 'string' ? JSON.parse(updated.benefits) : (updated.benefits || []);
-        return sendResponse(res, 200, true, 'Paket berhasil diupdate.', updated);
+
+        // Hitung berapa user yang ter-update
+        const affected = await db.getOne('SELECT COUNT(*) as cnt FROM users WHERE subscription_plan_id = ? AND api_key_active = 1', [id]);
+        const affectedCount = affected?.cnt || 0;
+
+        return sendResponse(res, 200, true, `Paket berhasil diupdate.${affectedCount > 0 ? ` Rate limit diterapkan ke ${affectedCount} user.` : ''}`, updated);
     } catch (err) {
         console.error('[Admin] Update plan error:', err.message);
         return sendResponse(res, 500, false, 'Terjadi kesalahan server.');
@@ -619,7 +633,7 @@ const adminActivateSubscription = async (req, res) => {
             [plan.id, expiresAt, user.id]
         );
 
-        await db.run('UPDATE api_keys SET active = 1, expired_days = ?, created_at = ? WHERE id = ?', [plan.duration_days, new Date(), `user-${user.id}`]);
+        await db.run('UPDATE api_keys SET active = 1, expired_days = ?, rate_limit = ?, created_at = ? WHERE id = ?', [plan.duration_days, plan.rate_limit || 0, new Date(), `user-${user.id}`]);
 
         return sendResponse(res, 200, true, `Langganan ${plan.name} berhasil diaktifkan untuk ${user.name}.`, {
             userId: user.id,
