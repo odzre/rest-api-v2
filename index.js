@@ -32,10 +32,11 @@ const notifyOnResponse = require('./middleware/notifier');
 app.use(notifyOnResponse);
 
 // ==========================================
-// STATIC FILES
+// STATIC FILES (no-cache agar update langsung terlihat)
 // ==========================================
-app.use('/admin', express.static(path.join(__dirname, 'public', 'admin')));
-app.use('/user', express.static(path.join(__dirname, 'public', 'user')));
+const staticOptions = { etag: true, lastModified: true, setHeaders: (res) => { res.setHeader('Cache-Control', 'no-cache, must-revalidate'); } };
+app.use('/admin', express.static(path.join(__dirname, 'public', 'admin'), staticOptions));
+app.use('/user', express.static(path.join(__dirname, 'public', 'user'), staticOptions));
 app.use('/image', express.static(path.join(__dirname, 'public', 'image')));
 
 // ==========================================
