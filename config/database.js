@@ -123,9 +123,15 @@ async function init() {
                 orkut_username TEXT DEFAULT NULL,
                 orkut_auth_token TEXT DEFAULT NULL,
                 orkut_saved_at DATETIME DEFAULT NULL,
+                digi_cookie LONGTEXT DEFAULT NULL,
+                digi_saved_at DATETIME DEFAULT NULL,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         `);
+
+        // Safe migration: tambah kolom digi_cookie jika belum ada
+        try { await conn.query('ALTER TABLE user_tokens ADD COLUMN digi_cookie LONGTEXT DEFAULT NULL AFTER orkut_saved_at'); } catch(e) {}
+        try { await conn.query('ALTER TABLE user_tokens ADD COLUMN digi_saved_at DATETIME DEFAULT NULL AFTER digi_cookie'); } catch(e) {}
 
         await conn.query(`
             CREATE TABLE IF NOT EXISTS admins (
