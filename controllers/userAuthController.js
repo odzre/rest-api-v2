@@ -619,7 +619,7 @@ const adminActivateSubscription = async (req, res) => {
             [plan.id, expiresAt, user.id]
         );
 
-        await db.run('UPDATE api_keys SET active = 1, expired_days = ? WHERE id = ?', [plan.duration_days, `user-${user.id}`]);
+        await db.run('UPDATE api_keys SET active = 1, expired_days = ?, created_at = ? WHERE id = ?', [plan.duration_days, new Date(), `user-${user.id}`]);
 
         return sendResponse(res, 200, true, `Langganan ${plan.name} berhasil diaktifkan untuk ${user.name}.`, {
             userId: user.id,
