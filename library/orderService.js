@@ -89,19 +89,49 @@ async function updateOrder(reffid, updates) {
 // ==========================================
 // WEBHOOK
 // ==========================================
+const WEBHOOK_MAX_RETRIES = 3;
+const WEBHOOK_TIMEOUT_MS = 10000; // 10 detik
+const WEBHOOK_RETRY_DELAYS = [5000, 15000, 45000]; // 5s, 15s, 45s
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function sendWebhook(url, data) {
-    try {
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        });
-        console.log(`[Webhook] → ${url} [${res.status}]`);
-        return res.ok;
-    } catch (err) {
-        console.error(`[Webhook] Failed → ${url}: ${err.message}`);
-        return false;
+    const bodyString = JSON.stringify(data);
+
+    for (let attempt = 0; attempt <= WEBHOOK_MAX_RETRIES; attempt++) {
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), WEBHOOK_TIMEOUT_MS);
+
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: bodyString,
+                signal: controller.signal,
+            });
+            clearTimeout(timeout);
+
+            console.log(`[Webhook] → ${url} [${res.status}] (attempt ${attempt + 1}/${WEBHOOK_MAX_RETRIES + 1})`);
+            if (res.ok) return true;
+
+            console.warn(`[Webhook] ⚠️ Non-2xx response (${res.status}), will retry...`);
+        } catch (err) {
+            const reason = err.name === 'AbortError' ? 'TIMEOUT' : err.message;
+            console.error(`[Webhook] ❌ Attempt ${attempt + 1} failed → ${url}: ${reason}`);
+        }
+
+        // Retry delay (skip after last attempt)
+        if (attempt < WEBHOOK_MAX_RETRIES) {
+            const delay = WEBHOOK_RETRY_DELAYS[attempt] || 45000;
+            console.log(`[Webhook] ⏳ Retrying in ${delay / 1000}s...`);
+            await sleep(delay);
+        }
     }
+
+    console.error(`[Webhook] 🚫 All ${WEBHOOK_MAX_RETRIES + 1} attempts failed → ${url}`);
+    return false;
 }
 
 // ==========================================
