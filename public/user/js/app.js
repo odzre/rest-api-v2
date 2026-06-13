@@ -23,13 +23,13 @@ const App={
     navigate(page){
         this.currentPage=page;location.hash=page;
         document.querySelectorAll('.nav-item[data-page]').forEach(i=>i.classList.toggle('active',i.dataset.page===page));
-        const titles={dashboard:['Dashboard','Overview transaksi Anda'],langganan:['Langganan','Paket langganan API'],gopay:['GoPay Merchant','Setup dan kelola token GoPay'],orderkouta:['OrderKuota','Setup dan kelola token OrderKuota'],pengaturan:['Pengaturan','Profil dan keamanan akun']};
+        const titles={dashboard:['Dashboard','Overview transaksi Anda'],langganan:['Langganan','Paket langganan API'],gopay:['GoPay Merchant','Setup dan kelola token GoPay'],orderkouta:['OrderKuota','Setup dan kelola token OrderKuota'],digiflazz:['Digiflazz Tools','Update seller produk Digiflazz'],pengaturan:['Pengaturan','Profil dan keamanan akun']};
         const[t,s]=titles[page]||titles.dashboard;
         document.getElementById('pageTitle').textContent=t;
         document.getElementById('pageSubtitle').textContent=s;
         document.getElementById('headerActions').innerHTML='';
         document.getElementById('mainBody').innerHTML='<div class="page-content" id="pageContent"></div>';
-        const r={dashboard:()=>this.renderDashboard(),langganan:()=>this.renderLangganan(),gopay:()=>this.renderGopay(),orderkouta:()=>this.renderOrderkouta(),pengaturan:()=>this.renderPengaturan()};
+        const r={dashboard:()=>this.renderDashboard(),langganan:()=>this.renderLangganan(),gopay:()=>this.renderGopay(),orderkouta:()=>this.renderOrderkouta(),digiflazz:()=>this.renderDigiflazz(),pengaturan:()=>this.renderPengaturan()};
         (r[page]||r.dashboard)();
     },
 
@@ -227,6 +227,212 @@ const App={
         if(!confirm('Hapus token OrderKuota?'))return;
         const r=await UserAuth.apiFetch('/api/user/orderkouta/delete-token',{method:'DELETE'});
         if(r?.success){Toast.success('Token dihapus.');this.renderOrderkouta();}
+    },
+
+    // DIGIFLAZZ TOOLS
+    _digiEventSource: null,
+    async renderDigiflazz(){
+        const el=document.getElementById('pageContent');
+        el.innerHTML='<div class="skeleton" style="height:200px"></div>';
+        const status=await UserAuth.apiFetch('/api/user/digiflazz/session-status');
+        const has=status?.data?.hasSession;
+
+        if(!has){
+            // LOGIN FORM
+            el.innerHTML=`<div class="page-content">
+                <div class="stat-card-wide"><div class="stat-label">STATUS SESI DIGIFLAZZ</div><div class="stat-value" style="font-size:18px;color:var(--red)">Belum Login</div><div class="stat-sub">Silakan login ke akun Digiflazz Anda</div></div>
+                <div class="section-title">${IC.key} Login Digiflazz</div>
+                <div class="settings-section">
+                    <div class="form-group"><label class="form-label">Email / Username</label><input class="form-input" id="digiUser" placeholder="email@example.com"></div>
+                    <div class="form-group"><label class="form-label">Password</label><input class="form-input" id="digiPass" type="password" placeholder="Password"></div>
+                    <button class="btn btn-primary" onclick="App.digiLogin()" id="digiLoginBtn">Login</button>
+                </div>
+            </div>`;
+            return;
+        }
+
+        // LOGGED IN — show config panel
+        this._digiProfile=status.data;
+        this._renderDigiConfig(el,status.data);
+    },
+
+    async _renderDigiConfig(el,profile){
+        el.innerHTML=`<div class="page-content">
+            <div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">SESI DIGIFLAZZ AKTIF</div><div class="stat-value" style="font-size:18px;color:var(--green)">🏢 ${profile.companyName||'—'}</div><div class="stat-sub">👤 ${profile.userName||'—'} • 💰 Saldo: Rp ${(profile.balance||0).toLocaleString('id-ID')}</div></div><button class="btn btn-danger btn-sm" onclick="App.digiLogout()">Logout</button></div></div>
+            <div class="section-title">${IC.chart} Konfigurasi Update Seller</div>
+            <div class="settings-section" id="digiConfigSection"><div class="skeleton" style="height:100px"></div></div>
+            <div id="digiTerminalWrap" style="display:none">
+                <div class="section-title">📋 Log Eksekusi</div>
+                <div class="digi-terminal" id="digiTerminal"></div>
+            </div>
+        </div>`;
+        // Load dropdowns
+        const [catRes,brandRes,typeRes]=await Promise.all([
+            UserAuth.apiFetch('/api/user/digiflazz/categories'),
+            UserAuth.apiFetch('/api/user/digiflazz/brands'),
+            UserAuth.apiFetch('/api/user/digiflazz/types')
+        ]);
+        if(!catRes?.success){document.getElementById('digiConfigSection').innerHTML='<p style="color:var(--red)">Gagal memuat data. Session mungkin expired.</p>';return;}
+        this._digiCats=catRes.data||[];
+        this._digiBrands=brandRes.data||[];
+        this._digiTypes=typeRes.data||[];
+        this._digiSelectedTypes=[];
+        document.getElementById('digiConfigSection').innerHTML=`
+            <div class="form-group"><label class="form-label">Kategori</label>
+                <div class="searchable-dd" id="ddCategory"><input class="form-input dd-search" placeholder="Cari kategori..." oninput="App._filterDD('ddCategory',App._digiCats,this.value)" onfocus="App._showDD('ddCategory')"><div class="dd-list"></div><input type="hidden" id="digiCategory"></div></div>
+            <div class="form-group"><label class="form-label">Brand</label>
+                <div class="searchable-dd" id="ddBrand"><input class="form-input dd-search" placeholder="Cari brand..." oninput="App._filterDD('ddBrand',App._digiBrands,this.value)" onfocus="App._showDD('ddBrand')"><div class="dd-list"></div><input type="hidden" id="digiBrand"></div></div>
+            <div class="form-group"><label class="form-label">Type <span style="color:var(--text-muted);font-weight:400">(bisa pilih lebih dari 1)</span></label>
+                <div class="searchable-dd multi" id="ddType"><input class="form-input dd-search" placeholder="Cari type..." oninput="App._filterDDMulti('ddType',App._digiTypes,this.value)" onfocus="App._showDDMulti('ddType')"><div class="dd-tags" id="ddTypeTags"></div><div class="dd-list"></div></div></div>
+            <div class="form-row">
+                <div class="form-group"><label class="form-label">Minimal Rating</label><input class="form-input" id="digiRating" type="number" step="0.1" min="0" max="5" value="0" placeholder="0"><div class="form-hint">0 = semua rating</div></div>
+                <div class="form-group"><label class="form-label">Harga Seller</label><select class="form-input" id="digiSort"><option value="termurah">💰 Termurah</option><option value="termahal">💎 Termahal</option><option value="random">🎲 Random Pick</option></select></div>
+            </div>
+            <div class="form-group" style="display:flex;flex-direction:column;gap:10px">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="digiAutoCode" checked> <span>Auto-Generate Kode Produk</span></label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="digiAutoMax" checked> <span>Max Price mengikuti harga Seller</span></label>
+            </div>
+            <button class="btn btn-primary" onclick="App.digiExecute()" id="digiExecBtn">🚀 Jalankan Update</button>
+            <button class="btn btn-danger" onclick="App.digiStop()" id="digiStopBtn" style="display:none;margin-left:8px">⏹ Stop</button>`;
+        // Init dropdowns
+        this._filterDD('ddCategory',this._digiCats,'');
+        this._filterDD('ddBrand',this._digiBrands,'');
+        this._filterDDMulti('ddType',this._digiTypes,'');
+        // Close dropdowns on outside click
+        document.addEventListener('click',e=>{if(!e.target.closest('.searchable-dd')){document.querySelectorAll('.dd-list').forEach(l=>l.classList.remove('open'));}});
+    },
+
+    // Searchable dropdown helpers (single select)
+    _showDD(id){document.getElementById(id).querySelector('.dd-list').classList.add('open');},
+    _filterDD(id,items,q){
+        const list=document.getElementById(id).querySelector('.dd-list');
+        const filtered=q?items.filter(i=>i.name.toLowerCase().includes(q.toLowerCase())):items;
+        list.innerHTML=filtered.length?filtered.map(i=>`<div class="dd-item" onclick="App._selectDD('${id}','${i.id}','${i.name.replace(/'/g,"\\\\'")}')"><span>${i.name}</span></div>`).join(''):'<div class="dd-item disabled">Tidak ditemukan</div>';
+        list.classList.add('open');
+    },
+    _selectDD(id,val,name){
+        const wrap=document.getElementById(id);
+        wrap.querySelector('.dd-search').value=name;
+        wrap.querySelector('input[type=hidden]').value=val;
+        wrap.querySelector('.dd-list').classList.remove('open');
+    },
+
+    // Multi-select dropdown helpers
+    _showDDMulti(id){document.getElementById(id).querySelector('.dd-list').classList.add('open');},
+    _filterDDMulti(id,items,q){
+        const list=document.getElementById(id).querySelector('.dd-list');
+        const filtered=q?items.filter(i=>i.name.toLowerCase().includes(q.toLowerCase())):items;
+        const sel=this._digiSelectedTypes||[];
+        list.innerHTML=filtered.length?filtered.map(i=>`<div class="dd-item" onclick="App._toggleDDMulti('${id}','${i.id}','${i.name.replace(/'/g,"\\\\'")}')"><label style="display:flex;align-items:center;gap:8px;pointer-events:none"><input type="checkbox" ${sel.includes(i.id)?'checked':''} style="pointer-events:none"> ${i.name}</label></div>`).join(''):'<div class="dd-item disabled">Tidak ditemukan</div>';
+        list.classList.add('open');
+    },
+    _toggleDDMulti(id,val,name){
+        const idx=this._digiSelectedTypes.indexOf(val);
+        if(idx>-1)this._digiSelectedTypes.splice(idx,1);else this._digiSelectedTypes.push(val);
+        // Update tags
+        const tagsEl=document.getElementById(id+'Tags');
+        if(tagsEl)tagsEl.innerHTML=this._digiSelectedTypes.map(tid=>{const t=this._digiTypes.find(x=>x.id===tid);return t?`<span class="dd-tag">${t.name} <span onclick="event.stopPropagation();App._toggleDDMulti('${id}','${tid}','')">×</span></span>`:''}).join('');
+        // Re-render list
+        const q=document.getElementById(id).querySelector('.dd-search').value;
+        this._filterDDMulti(id,this._digiTypes,q);
+    },
+
+    // Digiflazz actions
+    async digiLogin(){
+        const user=document.getElementById('digiUser').value.trim();
+        const pass=document.getElementById('digiPass').value;
+        if(!user||!pass)return Toast.error('Email dan password wajib diisi!');
+        const btn=document.getElementById('digiLoginBtn');btn.disabled=true;btn.textContent='Logging in...';
+        const r=await UserAuth.apiFetch('/api/user/digiflazz/login',{method:'POST',body:JSON.stringify({username:user,password:pass})});
+        btn.disabled=false;btn.textContent='Login';
+        if(!r?.success)return Toast.error(r?.message||'Gagal login');
+        if(r.data?.needs2fa){
+            // Show 2FA form
+            const el=document.getElementById('pageContent');
+            el.innerHTML=`<div class="page-content">
+                <div class="stat-card-wide"><div class="stat-label">VERIFIKASI 2FA</div><div class="stat-value" style="font-size:18px;color:var(--accent-light)">Masukkan Kode Autentikasi</div><div class="stat-sub">Cek aplikasi authenticator Anda</div></div>
+                <div class="settings-section">
+                    <div class="form-group"><label class="form-label">Kode 2FA</label><input class="form-input" id="digi2fa" placeholder="000000" autofocus maxlength="6" style="font-family:var(--font-mono);font-size:20px;text-align:center;letter-spacing:8px"></div>
+                    <button class="btn btn-primary" onclick="App.digiVerify2fa()" id="digi2faBtn">Verifikasi</button>
+                </div>
+            </div>`;
+        }
+    },
+    async digiVerify2fa(){
+        const code=document.getElementById('digi2fa').value.trim();
+        if(!code)return Toast.error('Masukkan kode 2FA!');
+        const btn=document.getElementById('digi2faBtn');btn.disabled=true;btn.textContent='Verifying...';
+        const r=await UserAuth.apiFetch('/api/user/digiflazz/verify-2fa',{method:'POST',body:JSON.stringify({code})});
+        btn.disabled=false;btn.textContent='Verifikasi';
+        if(!r?.success)return Toast.error(r?.message||'Kode 2FA salah');
+        Toast.success('Login Digiflazz berhasil!');
+        this.renderDigiflazz();
+    },
+    async digiLogout(){
+        if(!confirm('Logout dari Digiflazz?'))return;
+        await UserAuth.apiFetch('/api/user/digiflazz/logout',{method:'DELETE'});
+        Toast.success('Berhasil logout Digiflazz.');
+        this.renderDigiflazz();
+    },
+    async digiExecute(){
+        const catId=document.getElementById('digiCategory').value;
+        const brandId=document.getElementById('digiBrand').value;
+        if(!catId)return Toast.error('Pilih kategori!');
+        if(!brandId)return Toast.error('Pilih brand!');
+        const body={
+            categoryId:catId,brandId:brandId,
+            typeIds:this._digiSelectedTypes||[],
+            minRating:parseFloat(document.getElementById('digiRating').value)||0,
+            sortPrice:document.getElementById('digiSort').value,
+            autoCode:document.getElementById('digiAutoCode').checked,
+            autoMaxPrice:document.getElementById('digiAutoMax').checked
+        };
+        // Show terminal
+        document.getElementById('digiTerminalWrap').style.display='block';
+        const term=document.getElementById('digiTerminal');
+        term.innerHTML='';
+        document.getElementById('digiExecBtn').style.display='none';
+        document.getElementById('digiStopBtn').style.display='inline-block';
+        // SSE via fetch
+        try{
+            const token=localStorage.getItem('user_token');
+            const resp=await fetch('/api/user/digiflazz/execute',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(body)});
+            const reader=resp.body.getReader();
+            const decoder=new TextDecoder();
+            this._digiRunning=true;
+            let buffer='';
+            while(true){
+                const{done,value}=await reader.read();
+                if(done)break;
+                buffer+=decoder.decode(value,{stream:true});
+                const lines=buffer.split('\n');
+                buffer=lines.pop();
+                for(const line of lines){
+                    if(!line.startsWith('data: '))continue;
+                    try{
+                        const ev=JSON.parse(line.slice(6));
+                        const cls=ev.type==='success'?'log-success':ev.type==='error'?'log-error':'log-info';
+                        term.innerHTML+=`<div class="log-line ${cls}">${ev.message}</div>`;
+                        if(ev.detail)term.innerHTML+=`<div class="log-line log-detail">   ${ev.detail}</div>`;
+                        if(ev.type==='done'){this._digiRunning=false;document.getElementById('digiStopBtn').style.display='none';document.getElementById('digiExecBtn').style.display='inline-block';}
+                        term.scrollTop=term.scrollHeight;
+                    }catch(e){}
+                }
+            }
+        }catch(e){
+            term.innerHTML+=`<div class="log-line log-error">❌ Koneksi terputus: ${e.message}</div>`;
+        }
+        this._digiRunning=false;
+        document.getElementById('digiStopBtn').style.display='none';
+        document.getElementById('digiExecBtn').style.display='inline-block';
+    },
+    digiStop(){
+        if(this._digiEventSource){this._digiEventSource.close();this._digiEventSource=null;}
+        this._digiRunning=false;
+        const term=document.getElementById('digiTerminal');
+        if(term)term.innerHTML+=`<div class="log-line log-error">⚠️ Proses dihentikan oleh user.</div>`;
+        document.getElementById('digiStopBtn').style.display='none';
+        document.getElementById('digiExecBtn').style.display='inline-block';
     },
 
     // PENGATURAN

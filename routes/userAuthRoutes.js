@@ -25,4 +25,16 @@ router.post('/orderkouta/save-token', verifyUser, uc.saveOrderkoutaToken);
 router.get('/orderkouta/token-status', verifyUser, uc.getOrderkoutaTokenStatus);
 router.delete('/orderkouta/delete-token', verifyUser, uc.deleteOrderkoutaToken);
 
+// Digiflazz Tools
+const digi = require('../controllers/digiflazzController');
+router.get('/digiflazz/session-status', verifyUser, digi.getSessionStatus);
+router.post('/digiflazz/login', verifyUser, digi.login);
+router.post('/digiflazz/verify-2fa', verifyUser, digi.verify2fa);
+router.delete('/digiflazz/logout', verifyUser, digi.logout);
+router.get('/digiflazz/categories', verifyUser, digi.getCategories);
+router.get('/digiflazz/brands', verifyUser, digi.getBrands);
+router.get('/digiflazz/types', verifyUser, digi.getTypes);
+router.get('/digiflazz/products/:categoryId', verifyUser, digi.getProducts);
+router.post('/digiflazz/execute', verifyUser, digi.executeUpdate);
+
 module.exports = router;

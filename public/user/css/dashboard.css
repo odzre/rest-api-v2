@@ -361,3 +361,29 @@ a, button, input, select, textarea, .nav-item, .btn, .stat-card, .feature-card, 
 @media (min-width: 769px) {
     .hamburger-btn { display: none; }
 }
+
+/* DIGIFLAZZ TERMINAL LOG */
+.digi-terminal { background: #0d1117; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; font-family: var(--font-mono); font-size: 12px; line-height: 1.7; max-height: 400px; overflow-y: auto; color: #c9d1d9; }
+.digi-terminal::-webkit-scrollbar { width: 6px; }
+.digi-terminal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.log-line { white-space: pre-wrap; word-break: break-all; }
+.log-success { color: #3fb950; }
+.log-error { color: #f85149; }
+.log-info { color: #c9d1d9; }
+.log-detail { color: #8b949e; font-size: 11px; }
+
+/* SEARCHABLE DROPDOWN */
+.searchable-dd { position: relative; }
+.searchable-dd .dd-search { width: 100%; }
+.dd-list { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm); max-height: 200px; overflow-y: auto; z-index: 100; margin-top: 4px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.dd-list.open { display: block; }
+.dd-list::-webkit-scrollbar { width: 5px; }
+.dd-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.dd-item { padding: 10px 14px; cursor: pointer; font-size: 13px; transition: background 0.15s; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.dd-item:hover { background: rgba(139,92,246,0.15); }
+.dd-item.disabled { color: var(--text-muted); cursor: default; }
+.dd-item:last-child { border-bottom: none; }
+.dd-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.dd-tag { display: inline-flex; align-items: center; gap: 4px; background: var(--accent-dim); color: var(--accent-light); padding: 4px 10px; border-radius: 20px; font-size: 12px; }
+.dd-tag span { cursor: pointer; font-size: 14px; opacity: 0.7; }
+.dd-tag span:hover { opacity: 1; }
