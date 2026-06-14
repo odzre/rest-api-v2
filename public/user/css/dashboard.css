@@ -387,3 +387,23 @@ a, button, input, select, textarea, .nav-item, .btn, .stat-card, .feature-card, 
 .dd-tag { display: inline-flex; align-items: center; gap: 4px; background: var(--accent-dim); color: var(--accent-light); padding: 4px 10px; border-radius: 20px; font-size: 12px; }
 .dd-tag span { cursor: pointer; font-size: 14px; opacity: 0.7; }
 .dd-tag span:hover { opacity: 1; }
+
+/* WA GATEWAY */
+.wa-tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--bg-secondary); padding: 4px; border-radius: var(--radius-sm); }
+.wa-tab { flex: 1; padding: 10px 16px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; transition: all 0.2s; font-family: var(--font-main); }
+.wa-tab.active { background: var(--accent-dim); color: var(--accent-light); }
+.wa-tab:hover:not(.active) { color: var(--text-primary); background: rgba(255,255,255,0.04); }
+.wa-connect-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+.wa-connect-tabs .wa-tab { flex: 0; padding: 8px 20px; }
+.wa-log-list { display: flex; flex-direction: column; gap: 2px; }
+.wa-log-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-secondary); border-radius: var(--radius-sm); font-size: 13px; border: 1px solid var(--border); }
+.wa-log-time { color: var(--text-muted); font-family: var(--font-mono); font-size: 12px; min-width: 40px; }
+.wa-log-dir { font-size: 11px; }
+.wa-log-to { flex: 1; font-family: var(--font-mono); font-size: 12px; }
+.badge { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+.badge-green { background: rgba(52,211,153,0.15); color: var(--green); }
+.badge-accent { background: var(--accent-dim); color: var(--accent-light); }
+.badge-purple { background: rgba(168,85,247,0.15); color: #a855f7; }
+.wa-group-card { padding: 14px 16px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 8px; }
+.wa-group-card strong { color: var(--text-primary); font-size: 14px; }
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }

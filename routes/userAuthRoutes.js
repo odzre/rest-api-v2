@@ -37,4 +37,21 @@ router.get('/digiflazz/types', verifyUser, digi.getTypes);
 router.get('/digiflazz/products/:categoryId', verifyUser, digi.getProducts);
 router.post('/digiflazz/execute', verifyUser, digi.executeUpdate);
 
+// WA Gateway
+const waCtrl = require('../controllers/waGatewayController');
+router.get('/wa/status', verifyUser, waCtrl.getStatus);
+router.get('/wa/connect', verifyUser, waCtrl.connect);
+router.post('/wa/pair', verifyUser, waCtrl.requestPair);
+router.delete('/wa/disconnect', verifyUser, waCtrl.disconnect);
+router.post('/wa/send', verifyUser, waCtrl.sendMsg);
+router.post('/wa/broadcast', verifyUser, waCtrl.broadcastMsg);
+router.get('/wa/groups', verifyUser, waCtrl.listGroups);
+router.get('/wa/groups/:id', verifyUser, waCtrl.groupInfo);
+router.post('/wa/groups/:id/send', verifyUser, waCtrl.sendToGroup);
+router.get('/wa/commands', verifyUser, waCtrl.listCommands);
+router.post('/wa/commands', verifyUser, waCtrl.createCommand);
+router.put('/wa/commands/:id', verifyUser, waCtrl.editCommand);
+router.delete('/wa/commands/:id', verifyUser, waCtrl.removeCommand);
+router.get('/wa/logs', verifyUser, waCtrl.getWaLogs);
+
 module.exports = router;

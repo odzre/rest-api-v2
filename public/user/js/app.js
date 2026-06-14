@@ -23,13 +23,13 @@ const App={
     navigate(page){
         this.currentPage=page;location.hash=page;
         document.querySelectorAll('.nav-item[data-page]').forEach(i=>i.classList.toggle('active',i.dataset.page===page));
-        const titles={dashboard:['Dashboard','Overview transaksi Anda'],langganan:['Langganan','Paket langganan API'],gopay:['GoPay Merchant','Setup dan kelola token GoPay'],orderkouta:['OrderKuota','Setup dan kelola token OrderKuota'],digiflazz:['Digiflazz Tools','Update seller produk Digiflazz'],pengaturan:['Pengaturan','Profil dan keamanan akun']};
+        const titles={dashboard:['Dashboard','Overview transaksi Anda'],langganan:['Langganan','Paket langganan API'],gopay:['GoPay Merchant','Setup dan kelola token GoPay'],orderkouta:['OrderKuota','Setup dan kelola token OrderKuota'],digiflazz:['Digiflazz Tools','Update seller produk Digiflazz'],wagateway:['WA Gateway','Kelola WhatsApp Gateway'],pengaturan:['Pengaturan','Profil dan keamanan akun']};
         const[t,s]=titles[page]||titles.dashboard;
         document.getElementById('pageTitle').textContent=t;
         document.getElementById('pageSubtitle').textContent=s;
         document.getElementById('headerActions').innerHTML='';
         document.getElementById('mainBody').innerHTML='<div class="page-content" id="pageContent"></div>';
-        const r={dashboard:()=>this.renderDashboard(),langganan:()=>this.renderLangganan(),gopay:()=>this.renderGopay(),orderkouta:()=>this.renderOrderkouta(),digiflazz:()=>this.renderDigiflazz(),pengaturan:()=>this.renderPengaturan()};
+        const r={dashboard:()=>this.renderDashboard(),langganan:()=>this.renderLangganan(),gopay:()=>this.renderGopay(),orderkouta:()=>this.renderOrderkouta(),digiflazz:()=>this.renderDigiflazz(),wagateway:()=>this.renderWaGateway(),pengaturan:()=>this.renderPengaturan()};
         (r[page]||r.dashboard)();
     },
 
@@ -430,9 +430,227 @@ const App={
         if(this._digiEventSource){this._digiEventSource.close();this._digiEventSource=null;}
         this._digiRunning=false;
         const term=document.getElementById('digiTerminal');
-        if(term)term.innerHTML+=`<div class="log-line log-error">⚠️ Proses dihentikan oleh user.</div>`;
+        if(term)term.innerHTML+=`<div class="log-line log-error">Proses dihentikan oleh user.</div>`;
         document.getElementById('digiStopBtn').style.display='none';
         document.getElementById('digiExecBtn').style.display='inline-block';
+    },
+
+    // WA GATEWAY
+    _waTab:'koneksi',
+    async renderWaGateway(){
+        const el=document.getElementById('pageContent');
+        el.innerHTML='<div class="skeleton" style="height:200px"></div>';
+        const st=await UserAuth.apiFetch('/api/user/wa/status');
+        this._waStatus=st?.data||{connected:false,status:'none'};
+        this._renderWaTabs(el);
+    },
+    _renderWaTabs(el){
+        const s=this._waStatus;
+        const tabs=['koneksi','pesan','commands','grup'];
+        el.innerHTML=`<div class="page-content">
+            <div class="wa-tabs">${tabs.map(t=>`<button class="wa-tab${this._waTab===t?' active':''}" onclick="App._waTab='${t}';App._renderWaTabs(document.getElementById('pageContent'))">${t==='koneksi'?'Koneksi':t==='pesan'?'Pesan':t==='commands'?'Commands':t==='grup'?'Grup':t}</button>`).join('')}</div>
+            <div id="waTabContent"></div>
+        </div>`;
+        this['_waTab_'+this._waTab]();
+    },
+
+    // TAB: KONEKSI
+    _waTab_koneksi(){
+        const s=this._waStatus;const el=document.getElementById('waTabContent');
+        if(s.connected){
+            el.innerHTML=`<div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">STATUS</div><div class="stat-value" style="font-size:18px;color:var(--green)">Terhubung</div><div class="stat-sub">${s.phoneNumber||''} ${s.name?'('+s.name+')':''}</div></div><button class="btn btn-danger btn-sm" onclick="App._waDisconnect()">Disconnect</button></div></div>`;
+        } else if(s.status==='saved'){
+            el.innerHTML=`<div class="stat-card-wide"><div class="stat-label">STATUS</div><div class="stat-value" style="font-size:18px;color:var(--accent-light)">Session Tersimpan</div><div class="stat-sub">Klik reconnect untuk menghubungkan kembali</div></div>
+            <div class="settings-section"><button class="btn btn-primary" onclick="App._waConnect()">Reconnect</button> <button class="btn btn-danger" onclick="App._waDisconnect()">Hapus Session</button></div>`;
+        } else {
+            el.innerHTML=`<div class="stat-card-wide"><div class="stat-label">STATUS</div><div class="stat-value" style="font-size:18px;color:var(--red)">Belum Terhubung</div></div>
+            <div class="settings-section">
+                <div class="section-title">${IC.key} Hubungkan WhatsApp</div>
+                <div class="wa-connect-tabs"><button class="wa-tab active" id="waQrTab" onclick="App._waShowQrMode()">QR Code</button><button class="wa-tab" id="waPairTab" onclick="App._waShowPairMode()">Pairing Code</button></div>
+                <div id="waConnectContent">
+                    <p style="color:var(--text-muted);margin-bottom:12px">Klik tombol di bawah untuk memulai koneksi dan mendapatkan QR Code.</p>
+                    <button class="btn btn-primary" onclick="App._waConnect()" id="waConnectBtn">Mulai Koneksi</button>
+                    <div id="waQrBox" style="margin-top:16px"></div>
+                </div>
+            </div>`;
+        }
+    },
+    _waShowQrMode(){
+        document.getElementById('waQrTab').classList.add('active');document.getElementById('waPairTab').classList.remove('active');
+        document.getElementById('waConnectContent').innerHTML=`<p style="color:var(--text-muted);margin-bottom:12px">Klik tombol di bawah untuk memulai koneksi dan mendapatkan QR Code.</p><button class="btn btn-primary" onclick="App._waConnect()" id="waConnectBtn">Mulai Koneksi</button><div id="waQrBox" style="margin-top:16px"></div>`;
+    },
+    _waShowPairMode(){
+        document.getElementById('waPairTab').classList.add('active');document.getElementById('waQrTab').classList.remove('active');
+        document.getElementById('waConnectContent').innerHTML=`<div class="form-group"><label class="form-label">Nomor WhatsApp</label><input class="form-input" id="waPairNumber" placeholder="628xxxxxxxxxx"></div><button class="btn btn-primary" onclick="App._waPair()" id="waPairBtn">Dapatkan Kode</button><div id="waPairResult" style="margin-top:12px"></div>`;
+    },
+    async _waConnect(){
+        const btn=document.getElementById('waConnectBtn');if(btn){btn.disabled=true;btn.textContent='Menghubungkan...';}
+        const qrBox=document.getElementById('waQrBox');if(qrBox)qrBox.innerHTML='<div class="skeleton" style="height:300px;width:300px"></div>';
+        try{
+            const token=localStorage.getItem('user_token');
+            const resp=await fetch('/api/user/wa/connect',{headers:{'Authorization':'Bearer '+token}});
+            const reader=resp.body.getReader();const decoder=new TextDecoder();let buf='';
+            while(true){
+                const{done,value}=await reader.read();if(done)break;
+                buf+=decoder.decode(value,{stream:true});const lines=buf.split('\n');buf=lines.pop();
+                for(const line of lines){
+                    if(!line.startsWith('data: '))continue;
+                    try{
+                        const ev=JSON.parse(line.slice(6));
+                        if(ev.type==='qr'&&qrBox)qrBox.innerHTML=`<img src="${ev.image}" style="width:280px;height:280px;border-radius:8px;border:2px solid var(--border)">`;
+                        if(ev.type==='connected'){Toast.success('WhatsApp terhubung!');this._waStatus={connected:true,status:'connected',phoneNumber:ev.phoneNumber,name:ev.name};this._renderWaTabs(document.getElementById('pageContent'));}
+                        if(ev.type==='error')Toast.error(ev.message);
+                    }catch(e){}
+                }
+            }
+        }catch(e){Toast.error('Gagal: '+e.message);}
+    },
+    async _waPair(){
+        const num=document.getElementById('waPairNumber').value.trim();if(!num)return Toast.error('Masukkan nomor!');
+        const btn=document.getElementById('waPairBtn');btn.disabled=true;btn.textContent='Memproses...';
+        const r=await UserAuth.apiFetch('/api/user/wa/pair',{method:'POST',body:JSON.stringify({phoneNumber:num})});
+        btn.disabled=false;btn.textContent='Dapatkan Kode';
+        if(r?.success){document.getElementById('waPairResult').innerHTML=`<div class="stat-card-wide"><div class="stat-label">PAIRING CODE</div><div class="stat-value" style="font-family:var(--font-mono);letter-spacing:4px;font-size:28px">${r.data.code}</div><div class="stat-sub">Masukkan kode ini di WhatsApp &gt; Perangkat Tertaut &gt; Tautkan Perangkat</div></div>`;}
+        else Toast.error(r?.message||'Gagal');
+    },
+    async _waDisconnect(){
+        if(!confirm('Putuskan koneksi WhatsApp?'))return;
+        await UserAuth.apiFetch('/api/user/wa/disconnect',{method:'DELETE'});
+        Toast.success('WhatsApp terputus.');this._waStatus={connected:false,status:'none'};this._renderWaTabs(document.getElementById('pageContent'));
+    },
+
+    // TAB: PESAN
+    _waTab_pesan(){
+        const el=document.getElementById('waTabContent');
+        if(!this._waStatus.connected){el.innerHTML='<div class="empty-state"><p>Hubungkan WhatsApp terlebih dahulu di tab Koneksi.</p></div>';return;}
+        el.innerHTML=`
+            <div class="section-title">${IC.key} Kirim Pesan</div>
+            <div class="settings-section">
+                <div class="form-group"><label class="form-label">Nomor Tujuan</label><input class="form-input" id="waSendTo" placeholder="628xxxxxxxxxx"></div>
+                <div class="form-group"><label class="form-label">Pesan</label><textarea class="form-input" id="waSendMsg" rows="3" placeholder="Tulis pesan..."></textarea></div>
+                <button class="btn btn-primary" onclick="App._waSend()" id="waSendBtn">Kirim</button>
+            </div>
+            <div class="section-title" style="margin-top:24px">${IC.chart} Broadcast</div>
+            <div class="settings-section">
+                <div class="form-group"><label class="form-label">Nomor Tujuan <span style="color:var(--text-muted);font-weight:400">(1 nomor per baris)</span></label><textarea class="form-input" id="waBcNumbers" rows="4" placeholder="628111\n628222\n628333"></textarea></div>
+                <div class="form-group"><label class="form-label">Pesan</label><textarea class="form-input" id="waBcMsg" rows="3" placeholder="Tulis pesan broadcast..."></textarea></div>
+                <div class="form-group"><label class="form-label">Delay (detik)</label><input class="form-input" id="waBcDelay" type="number" value="3" min="1" max="30" style="max-width:120px"></div>
+                <button class="btn btn-primary" onclick="App._waBroadcast()" id="waBcBtn">Kirim Broadcast</button>
+                <div id="waBcLog" style="display:none;margin-top:16px"><div class="digi-terminal" id="waBcTerminal"></div></div>
+            </div>
+            <div class="section-title" style="margin-top:24px">${IC.chart} Log Terkirim</div>
+            <div id="waLogList"><div class="skeleton" style="height:80px"></div></div>`;
+        this._loadWaLogs();
+    },
+    async _waSend(){
+        const to=document.getElementById('waSendTo').value.trim();const msg=document.getElementById('waSendMsg').value;
+        if(!to||!msg)return Toast.error('Nomor dan pesan wajib diisi!');
+        const btn=document.getElementById('waSendBtn');btn.disabled=true;btn.textContent='Mengirim...';
+        const r=await UserAuth.apiFetch('/api/user/wa/send',{method:'POST',body:JSON.stringify({to,message:msg})});
+        btn.disabled=false;btn.textContent='Kirim';
+        if(r?.success){Toast.success('Pesan terkirim!');document.getElementById('waSendMsg').value='';this._loadWaLogs();}else Toast.error(r?.message||'Gagal');
+    },
+    async _waBroadcast(){
+        const nums=document.getElementById('waBcNumbers').value.trim().split('\n').map(n=>n.trim()).filter(Boolean);
+        const msg=document.getElementById('waBcMsg').value;const delay=document.getElementById('waBcDelay').value;
+        if(!nums.length||!msg)return Toast.error('Nomor dan pesan wajib diisi!');
+        document.getElementById('waBcLog').style.display='block';
+        const term=document.getElementById('waBcTerminal');term.innerHTML='';
+        document.getElementById('waBcBtn').disabled=true;
+        try{
+            const token=localStorage.getItem('user_token');
+            const resp=await fetch('/api/user/wa/broadcast',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({numbers:nums,message:msg,delay})});
+            const reader=resp.body.getReader();const decoder=new TextDecoder();let buf='';
+            while(true){
+                const{done,value}=await reader.read();if(done)break;
+                buf+=decoder.decode(value,{stream:true});const lines=buf.split('\n');buf=lines.pop();
+                for(const line of lines){
+                    if(!line.startsWith('data: '))continue;
+                    try{const ev=JSON.parse(line.slice(6));const cls=ev.type==='success'?'log-success':ev.type==='error'?'log-error':'log-info';term.innerHTML+=`<div class="log-line ${cls}">${ev.message}</div>`;term.scrollTop=term.scrollHeight;}catch(e){}
+                }
+            }
+        }catch(e){term.innerHTML+=`<div class="log-line log-error">Error: ${e.message}</div>`;}
+        document.getElementById('waBcBtn').disabled=false;this._loadWaLogs();
+    },
+    async _loadWaLogs(){
+        const r=await UserAuth.apiFetch('/api/user/wa/logs');const el=document.getElementById('waLogList');
+        if(!r?.success||!r.data?.length){el.innerHTML='<div class="empty-state" style="padding:16px"><p>Belum ada log.</p></div>';return;}
+        el.innerHTML=`<div class="wa-log-list">${r.data.map(l=>{
+            const t=new Date(l.time).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+            const icon=l.status==='sent'?'<span style="color:var(--green)">Terkirim</span>':'<span style="color:var(--red)">Gagal</span>';
+            const to=l.to?.replace('@s.whatsapp.net','')?.replace('@g.us',' (grup)');
+            return `<div class="wa-log-item"><span class="wa-log-time">${t}</span><span class="wa-log-dir badge ${l.direction==='broadcast'?'badge-accent':l.direction==='auto-reply'?'badge-purple':'badge-green'}">${l.direction}</span><span class="wa-log-to">${to}</span>${icon}</div>`;
+        }).join('')}</div>`;
+    },
+
+    // TAB: COMMANDS
+    _waTab_commands(){
+        const el=document.getElementById('waTabContent');
+        if(!this._waStatus.connected){el.innerHTML='<div class="empty-state"><p>Hubungkan WhatsApp terlebih dahulu.</p></div>';return;}
+        el.innerHTML=`<div class="section-title">${IC.key} Auto-Reply Commands</div>
+            <div class="settings-section">
+                <button class="btn btn-primary btn-sm" onclick="App._waShowAddCmd()">Tambah Command</button>
+                <div id="waCmdForm" style="display:none;margin-top:16px">
+                    <div class="form-group"><label class="form-label">Trigger</label><input class="form-input" id="waCmdTrigger" placeholder=".harga"></div>
+                    <div class="form-group"><label class="form-label">Tipe Matching</label><select class="form-input" id="waCmdType"><option value="exact">Exact Match</option><option value="startswith">Starts With</option><option value="contains">Contains</option></select></div>
+                    <div class="form-group"><label class="form-label">Response</label><textarea class="form-input" id="waCmdResponse" rows="3" placeholder="Balasan otomatis..."></textarea></div>
+                    <button class="btn btn-primary btn-sm" onclick="App._waSaveCmd()" id="waCmdSaveBtn">Simpan</button>
+                    <button class="btn btn-sm" onclick="document.getElementById('waCmdForm').style.display='none'" style="margin-left:8px">Batal</button>
+                    <input type="hidden" id="waCmdEditId">
+                </div>
+                <div id="waCmdList" style="margin-top:16px"><div class="skeleton" style="height:80px"></div></div>
+            </div>`;
+        this._loadWaCmds();
+    },
+    _waShowAddCmd(){document.getElementById('waCmdForm').style.display='block';document.getElementById('waCmdTrigger').value='';document.getElementById('waCmdResponse').value='';document.getElementById('waCmdEditId').value='';document.getElementById('waCmdType').value='exact';},
+    _waEditCmd(id,trigger,response,type){document.getElementById('waCmdForm').style.display='block';document.getElementById('waCmdTrigger').value=trigger;document.getElementById('waCmdResponse').value=response;document.getElementById('waCmdEditId').value=id;document.getElementById('waCmdType').value=type||'exact';},
+    async _waSaveCmd(){
+        const trigger=document.getElementById('waCmdTrigger').value.trim();const response=document.getElementById('waCmdResponse').value;const type=document.getElementById('waCmdType').value;const editId=document.getElementById('waCmdEditId').value;
+        if(!trigger||!response)return Toast.error('Trigger dan response wajib diisi!');
+        const url=editId?`/api/user/wa/commands/${editId}`:'/api/user/wa/commands';
+        const method=editId?'PUT':'POST';
+        const r=await UserAuth.apiFetch(url,{method,body:JSON.stringify({trigger,response,type})});
+        if(r?.success){Toast.success(editId?'Command diupdate!':'Command ditambahkan!');document.getElementById('waCmdForm').style.display='none';this._loadWaCmds();}else Toast.error(r?.message||'Gagal');
+    },
+    async _waDeleteCmd(id){
+        if(!confirm('Hapus command ini?'))return;
+        const r=await UserAuth.apiFetch(`/api/user/wa/commands/${id}`,{method:'DELETE'});
+        if(r?.success){Toast.success('Command dihapus!');this._loadWaCmds();}
+    },
+    async _loadWaCmds(){
+        const r=await UserAuth.apiFetch('/api/user/wa/commands');const el=document.getElementById('waCmdList');
+        if(!r?.success||!r.data?.length){el.innerHTML='<div class="empty-state" style="padding:16px"><p>Belum ada command.</p></div>';return;}
+        el.innerHTML=`<table class="data-table"><thead><tr><th>Trigger</th><th>Tipe</th><th>Response</th><th>Aksi</th></tr></thead><tbody>${r.data.map(c=>`<tr><td><code>${c.trigger}</code></td><td>${c.type}</td><td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.response}</td><td style="white-space:nowrap"><button class="btn btn-sm" onclick="App._waEditCmd('${c.id}','${c.trigger.replace(/'/g,"\\'")}',\`${c.response.replace(/`/g,"\\`")}\`,'${c.type}')">Edit</button> <button class="btn btn-danger btn-sm" onclick="App._waDeleteCmd('${c.id}')">Hapus</button></td></tr>`).join('')}</tbody></table>`;
+    },
+
+    // TAB: GRUP
+    _waTab_grup(){
+        const el=document.getElementById('waTabContent');
+        if(!this._waStatus.connected){el.innerHTML='<div class="empty-state"><p>Hubungkan WhatsApp terlebih dahulu.</p></div>';return;}
+        el.innerHTML=`<div class="section-title">${IC.chart} Daftar Grup</div><div id="waGroupList"><div class="skeleton" style="height:100px"></div></div>`;
+        this._loadWaGroups();
+    },
+    async _loadWaGroups(){
+        const r=await UserAuth.apiFetch('/api/user/wa/groups');const el=document.getElementById('waGroupList');
+        if(!r?.success||!r.data?.length){el.innerHTML='<div class="empty-state" style="padding:16px"><p>Tidak ada grup.</p></div>';return;}
+        el.innerHTML=r.data.map(g=>`<div class="wa-group-card">
+            <div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${g.subject}</strong><div style="font-size:12px;color:var(--text-muted)">${g.participants} anggota</div></div>
+            <button class="btn btn-primary btn-sm" onclick="App._waShowGroupSend('${g.id}','${g.subject.replace(/'/g,"\\'")}')">Kirim Pesan</button></div>
+        </div>`).join('');
+    },
+    _waShowGroupSend(gid,name){
+        const el=document.getElementById('waGroupList');
+        el.innerHTML=`<div class="settings-section"><div class="section-title">Kirim ke: ${name}</div>
+            <div class="form-group"><textarea class="form-input" id="waGroupMsg" rows="3" placeholder="Tulis pesan..."></textarea></div>
+            <button class="btn btn-primary btn-sm" onclick="App._waSendToGroup('${gid}')" id="waGroupSendBtn">Kirim</button>
+            <button class="btn btn-sm" onclick="App._loadWaGroups()" style="margin-left:8px">Kembali</button></div>`;
+    },
+    async _waSendToGroup(gid){
+        const msg=document.getElementById('waGroupMsg').value;if(!msg)return Toast.error('Pesan wajib diisi!');
+        const btn=document.getElementById('waGroupSendBtn');btn.disabled=true;btn.textContent='Mengirim...';
+        const r=await UserAuth.apiFetch(`/api/user/wa/groups/${gid}/send`,{method:'POST',body:JSON.stringify({message:msg})});
+        btn.disabled=false;btn.textContent='Kirim';
+        if(r?.success){Toast.success('Pesan terkirim ke grup!');this._loadWaGroups();}else Toast.error(r?.message||'Gagal');
     },
 
     // PENGATURAN
