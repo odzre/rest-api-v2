@@ -40,19 +40,19 @@ router.post('/digiflazz/execute', verifyUser, requireFeature('allow_digiflazz'),
 
 // WA Gateway
 const waCtrl = require('../controllers/waGatewayController');
-router.get('/wa/status', verifyUser, requireFeature('allow_wa_gateway'), waCtrl.getStatus);
-router.get('/wa/connect', verifyUser, requireFeature('allow_wa_gateway'), waCtrl.connect);
-router.post('/wa/pair', verifyUser, requireFeature('allow_wa_gateway'), waCtrl.requestPair);
-router.delete('/wa/disconnect', verifyUser, requireFeature('allow_wa_gateway'), waCtrl.disconnect);
-router.post('/wa/send', verifyUser, requireFeature('allow_wa_gateway'), waCtrl.sendMsg);
-router.post('/wa/broadcast', verifyUser, requireFeature('allow_wa_gateway'), waCtrl.broadcastMsg);
-router.get('/wa/groups', verifyUser, requireFeature('allow_wa_gateway'), waCtrl.listGroups);
-router.get('/wa/groups/:id', verifyUser, requireFeature('allow_wa_gateway'), waCtrl.groupInfo);
-router.post('/wa/groups/:id/send', verifyUser, requireFeature('allow_wa_gateway'), waCtrl.sendToGroup);
-router.get('/wa/commands', verifyUser, requireFeature('allow_wa_gateway'), waCtrl.listCommands);
-router.post('/wa/commands', verifyUser, requireFeature('allow_wa_gateway'), waCtrl.createCommand);
-router.put('/wa/commands/:id', verifyUser, requireFeature('allow_wa_gateway'), waCtrl.editCommand);
-router.delete('/wa/commands/:id', verifyUser, requireFeature('allow_wa_gateway'), waCtrl.removeCommand);
-router.get('/wa/logs', verifyUser, requireFeature('allow_wa_gateway'), waCtrl.getWaLogs);
+router.get('/wa/status', verifyUser, waCtrl.getStatus);
+router.get('/wa/connect', verifyUser, waCtrl.connect);
+router.post('/wa/pair', verifyUser, waCtrl.requestPair);
+router.delete('/wa/disconnect', verifyUser, waCtrl.disconnect);
+router.post('/wa/send', verifyUser, waCtrl.sendMsg);
+router.post('/wa/broadcast', verifyUser, waCtrl.broadcastMsg);
+router.get('/wa/groups', verifyUser, waCtrl.listGroups);
+router.get('/wa/groups/:id', verifyUser, waCtrl.groupInfo);
+router.post('/wa/groups/:id/send', verifyUser, waCtrl.sendToGroup);
+router.get('/wa/commands', verifyUser, waCtrl.listCommands);
+router.post('/wa/commands', verifyUser, waCtrl.createCommand);
+router.put('/wa/commands/:id', verifyUser, waCtrl.editCommand);
+router.delete('/wa/commands/:id', verifyUser, waCtrl.removeCommand);
+router.get('/wa/logs', verifyUser, waCtrl.getWaLogs);
 
 module.exports = router;

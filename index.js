@@ -51,6 +51,7 @@ app.use('/api/user', userAuthRoutes);
 app.use('/api/v5/gopay', gopayRoutes);
 app.use('/api/v5/orderkouta', orderkoutaRoutes);
 app.use('/api/v5/payment', paymentRoutes);
+app.use('/api/v5/whatsapp', require('./routes/waGatewayRoutes'));
 // CekID routes mounted at /api/v5 — HARUS di bawah route spesifik agar /gopay, /orderkouta, /payment cocok duluan
 app.use('/api/v5', cekidRoutes);
 

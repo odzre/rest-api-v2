@@ -455,7 +455,6 @@ const App={
         const el=document.getElementById('pageContent');
         el.innerHTML='<div class="skeleton" style="height:200px"></div>';
         const st=await UserAuth.apiFetch('/api/user/wa/status');
-        if(this._checkFeatureBlock(st,el))return;
         this._waStatus=st?.data||{connected:false,status:'none'};
         this._renderWaTabs(el);
     },
