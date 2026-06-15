@@ -6,6 +6,25 @@
 const path = require('path');
 const fs = require('fs');
 const { getJSON, setJSON, deleteKey, scanKeys, pushToList, getList } = require('../config/redis');
+const db = require('../config/database');
+
+// Credit watermark for non-subscribers
+const CREDIT_TEXT = '\n\n> tools.odzreshop.id';
+
+async function hasActiveSubscription(userId) {
+    try {
+        const user = await db.getOne('SELECT api_key_active, subscription_expires_at FROM users WHERE id = ?', [userId]);
+        if (!user || !user.api_key_active) return false;
+        if (user.subscription_expires_at && new Date() > new Date(user.subscription_expires_at)) return false;
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+function appendCredit(text, subscribed) {
+    return subscribed ? text : text + CREDIT_TEXT;
+}
 
 // Store active sessions in memory
 const sessions = new Map();
@@ -215,7 +234,9 @@ async function startSession(userId, onQR, onConnected, onDisconnected) {
 
             if (match) {
                 try {
-                    await sock.sendMessage(msg.key.remoteJid, { text: cmd.response });
+                    const subscribed = await hasActiveSubscription(userId);
+                    const replyText = appendCredit(cmd.response, subscribed);
+                    await sock.sendMessage(msg.key.remoteJid, { text: replyText });
                     await addLog(userId, {
                         direction: 'auto-reply',
                         to: msg.key.remoteJid,
@@ -296,7 +317,9 @@ async function sendMessage(userId, to, text) {
         jid = jid + '@s.whatsapp.net';
     }
 
-    await session.sock.sendMessage(jid, { text });
+    const subscribed = await hasActiveSubscription(userId);
+    const finalText = appendCredit(text, subscribed);
+    await session.sock.sendMessage(jid, { text: finalText });
     await addLog(userId, { direction: 'outgoing', to: jid, message: text.substring(0, 100), status: 'sent' });
     return { jid, status: 'sent' };
 }
@@ -317,7 +340,9 @@ async function broadcast(userId, numbers, text, delayMs = 3000) {
         jid = jid + '@s.whatsapp.net';
 
         try {
-            await session.sock.sendMessage(jid, { text });
+            const subscribed = await hasActiveSubscription(userId);
+            const finalText = appendCredit(text, subscribed);
+            await session.sock.sendMessage(jid, { text: finalText });
             results.push({ number: num, jid, status: 'sent' });
             await addLog(userId, { direction: 'broadcast', to: jid, message: text.substring(0, 100), status: 'sent' });
         } catch (e) {
@@ -372,7 +397,9 @@ async function sendToGroup(userId, groupId, text) {
         throw new Error('WhatsApp belum terhubung.');
     }
 
-    await session.sock.sendMessage(groupId, { text });
+    const subscribed = await hasActiveSubscription(userId);
+    const finalText = appendCredit(text, subscribed);
+    await session.sock.sendMessage(groupId, { text: finalText });
     await addLog(userId, { direction: 'group', to: groupId, message: text.substring(0, 100), status: 'sent' });
     return { groupId, status: 'sent' };
 }

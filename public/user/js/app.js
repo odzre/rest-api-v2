@@ -235,6 +235,13 @@ const App={
         const el=document.getElementById('pageContent');
         el.innerHTML='<div class="skeleton" style="height:200px"></div>';
         const status=await UserAuth.apiFetch('/api/user/digiflazz/session-status');
+
+        // Check subscription
+        if(status?.message?.includes('langganan')||status?.message?.includes('expired')){
+            el.innerHTML=`<div class="page-content"><div class="stat-card-wide"><div class="stat-label">AKSES DITOLAK</div><div class="stat-value" style="font-size:18px;color:var(--red)">Langganan Tidak Aktif</div><div class="stat-sub">${status.message}</div></div><div class="settings-section"><p style="color:var(--text-muted)">Fitur Digiflazz Tools hanya tersedia untuk user dengan langganan aktif. Silakan hubungi admin untuk mengaktifkan langganan.</p></div></div>`;
+            return;
+        }
+
         const has=status?.data?.hasSession;
 
         if(!has){
