@@ -248,7 +248,7 @@ const App={
             // LOGIN FORM
             el.innerHTML=`<div class="page-content">
                 <div class="stat-card-wide"><div class="stat-label">STATUS SESI DIGIFLAZZ</div><div class="stat-value" style="font-size:18px;color:var(--red)">Belum Login</div><div class="stat-sub">Silakan login ke akun Digiflazz Anda</div></div>
-                <div class="section-title">${IC.key} Login Digiflazz</div>
+                <div class="section-title">${IC.shield} Login Digiflazz</div>
                 <div class="settings-section">
                     <div class="form-group"><label class="form-label">Email / Username</label><input class="form-input" id="digiUser" placeholder="email@example.com"></div>
                     <div class="form-group"><label class="form-label">Password</label><input class="form-input" id="digiPass" type="password" placeholder="Password"></div>
@@ -472,7 +472,7 @@ const App={
         } else {
             el.innerHTML=`<div class="stat-card-wide"><div class="stat-label">STATUS</div><div class="stat-value" style="font-size:18px;color:var(--red)">Belum Terhubung</div></div>
             <div class="settings-section">
-                <div class="section-title">${IC.key} Hubungkan WhatsApp</div>
+                <div class="section-title">${IC.shield} Hubungkan WhatsApp</div>
                 <div class="wa-connect-tabs"><button class="wa-tab active" id="waQrTab" onclick="App._waShowQrMode()">QR Code</button><button class="wa-tab" id="waPairTab" onclick="App._waShowPairMode()">Pairing Code</button></div>
                 <div id="waConnectContent">
                     <p style="color:var(--text-muted);margin-bottom:12px">Klik tombol di bawah untuk memulai koneksi dan mendapatkan QR Code.</p>
@@ -531,7 +531,7 @@ const App={
         const el=document.getElementById('waTabContent');
         if(!this._waStatus.connected){el.innerHTML='<div class="empty-state"><p>Hubungkan WhatsApp terlebih dahulu di tab Koneksi.</p></div>';return;}
         el.innerHTML=`
-            <div class="section-title">${IC.key} Kirim Pesan</div>
+            <div class="section-title">${IC.shield} Kirim Pesan</div>
             <div class="settings-section">
                 <div class="form-group"><label class="form-label">Nomor Tujuan</label><input class="form-input" id="waSendTo" placeholder="628xxxxxxxxxx"></div>
                 <div class="form-group"><label class="form-label">Pesan</label><textarea class="form-input" id="waSendMsg" rows="3" placeholder="Tulis pesan..."></textarea></div>
@@ -594,7 +594,7 @@ const App={
     _waTab_commands(){
         const el=document.getElementById('waTabContent');
         if(!this._waStatus.connected){el.innerHTML='<div class="empty-state"><p>Hubungkan WhatsApp terlebih dahulu.</p></div>';return;}
-        el.innerHTML=`<div class="section-title">${IC.key} Auto-Reply Commands</div>
+        el.innerHTML=`<div class="section-title">${IC.shield} Auto-Reply Commands</div>
             <div class="settings-section">
                 <button class="btn btn-primary btn-sm" onclick="App._waShowAddCmd()">Tambah Command</button>
                 <div id="waCmdForm" style="display:none;margin-top:16px">
