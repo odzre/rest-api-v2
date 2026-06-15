@@ -4,9 +4,11 @@ const gopayController = require('../controllers/gopayController');
 const orderController = require('../controllers/orderController');
 const verifyApiKey = require('../middleware/auth');
 const { injectGopayTokens } = require('../middleware/tokenInjector');
+const { requireFeature } = require('../middleware/featureCheck');
 
-// Semua endpoint GoPay dilindungi API Key
+// Semua endpoint GoPay dilindungi API Key + feature check
 router.use(verifyApiKey);
+router.use(requireFeature('allow_gopay'));
 
 router.post('/get-otp-gopaymerchant', gopayController.requestOtp);
 router.post('/get-token-gopaymerchant', gopayController.verifyOtp);

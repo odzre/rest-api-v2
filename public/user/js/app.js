@@ -88,10 +88,16 @@ const App={
     },
 
     // GOPAY MERCHANT
+    _checkFeatureBlock(res,el){
+        if(res?.success===false&&res?.message&&(res.message.includes('tidak tersedia')||res.message.includes('langganan')||res.message.includes('expired'))){
+            el.innerHTML=`<div class="page-content"><div class="stat-card-wide"><div class="stat-label">AKSES DITOLAK</div><div class="stat-value" style="font-size:18px;color:var(--red)">Fitur Tidak Tersedia</div><div class="stat-sub">${res.message}</div></div><div class="settings-section"><p style="color:var(--text-muted)">Hubungi admin untuk mengubah paket langganan Anda.</p></div></div>`;return true;
+        }return false;
+    },
     async renderGopay(){
         const el=document.getElementById('pageContent');
         el.innerHTML='<div class="skeleton" style="height:200px"></div>';
         const status=await UserAuth.apiFetch('/api/user/gopay/token-status');
+        if(this._checkFeatureBlock(status,el))return;
         const hasToken=status?.data?.hasToken;
         el.innerHTML=`<div class="page-content">
             <div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">STATUS TOKEN GOPAY</div><div class="stat-value" style="font-size:18px;color:${hasToken?'var(--green)':'var(--red)'};">${hasToken?'Token Tersimpan':'Belum Setup'}</div><div class="stat-sub">${hasToken?'Terakhir disimpan: '+(status.data.savedAt?new Date(status.data.savedAt).toLocaleString('id-ID'):'—'):'Silakan setup token GoPay Merchant Anda'}</div></div>${hasToken?'<button class="btn btn-danger btn-sm" onclick="App.deleteGopayToken()">Hapus Token</button>':''}</div></div>
@@ -165,6 +171,7 @@ const App={
         const el=document.getElementById('pageContent');
         el.innerHTML='<div class="skeleton" style="height:200px"></div>';
         const status=await UserAuth.apiFetch('/api/user/orderkouta/token-status');
+        if(this._checkFeatureBlock(status,el))return;
         const hasToken=status?.data?.hasToken;
         el.innerHTML=`<div class="page-content">
             <div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">STATUS TOKEN ORDERKOUTA</div><div class="stat-value" style="font-size:18px;color:${hasToken?'var(--green)':'var(--red)'};">${hasToken?'Token Tersimpan':'Belum Setup'}</div><div class="stat-sub">${hasToken?'Terakhir disimpan: '+(status.data.savedAt?new Date(status.data.savedAt).toLocaleString('id-ID'):'—'):'Silakan setup token OrderKuota Anda'}</div></div>${hasToken?'<button class="btn btn-danger btn-sm" onclick="App.deleteOrkutToken()">Hapus Token</button>':''}</div></div>
@@ -448,6 +455,7 @@ const App={
         const el=document.getElementById('pageContent');
         el.innerHTML='<div class="skeleton" style="height:200px"></div>';
         const st=await UserAuth.apiFetch('/api/user/wa/status');
+        if(this._checkFeatureBlock(st,el))return;
         this._waStatus=st?.data||{connected:false,status:'none'};
         this._renderWaTabs(el);
     },

@@ -407,11 +407,12 @@ const App = {
         const el = document.getElementById('pageContent');
         const filtered = query ? data.filter(p => p.name.toLowerCase().includes(query)) : data;
         el.innerHTML = `<div class="search-bar"><input class="form-input" id="searchPlans" placeholder="Cari nama paket..." value="${query||''}" oninput="App._renderLanggananTable(App._plansData,this.value.toLowerCase())"></div>
-        <div class="table-container page-content"><div class="table-scroll-wrapper"><table><thead><tr><th>Nama</th><th>Harga</th><th>Durasi</th><th>Rate Limit</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${filtered.length===0?'<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px">Tidak ada hasil ditemukan</td></tr>':filtered.map(p => `<tr>
+        <div class="table-container page-content"><div class="table-scroll-wrapper"><table><thead><tr><th>Nama</th><th>Harga</th><th>Durasi</th><th>Rate Limit</th><th>Fitur Akses</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${filtered.length===0?'<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:32px">Tidak ada hasil ditemukan</td></tr>':filtered.map(p => `<tr>
             <td style="font-weight:600">${p.name}</td>
             <td>Rp ${p.price.toLocaleString('id-ID')}</td>
             <td>${p.duration_days} hari</td>
             <td>${(p.rate_limit||0) > 0 ? `${p.rate_limit}/hari` : '<span class="badge badge-green">Unlimited</span>'}</td>
+            <td style="font-size:12px;line-height:1.8">${p.allow_gopay!==undefined?[p.allow_gopay?'<span class="badge badge-green">GoPay</span>':'',p.allow_orderkouta?'<span class="badge badge-green">OrderKuota</span>':'',p.allow_digiflazz?'<span class="badge badge-green">Digiflazz</span>':'',p.allow_wa_gateway?'<span class="badge badge-green">WA Gateway</span>':''].filter(Boolean).join(' ')||'<span class="badge badge-red">Tidak ada</span>':'<span class="badge badge-green">Semua</span>'}</td>
             <td><span class="badge ${p.active?'badge-green':'badge-red'}">${p.active?'Aktif':'Nonaktif'}</span></td>
             <td><button class="btn btn-secondary btn-sm" onclick="App.showEditPlanModal(${p.id})">${IC.edit}</button> <button class="btn btn-danger btn-sm" onclick="App.deletePlan(${p.id},'${p.name.replace(/'/g,"\\\'")}')">${IC.trash}</button></td>
         </tr>`).join('')}</tbody></table></div></div>`;
@@ -423,13 +424,18 @@ const App = {
             <div class="form-row"><div class="form-group"><label class="form-label">Harga (Rp)</label><input class="form-input" id="planPrice" type="number" placeholder="50000"></div>
             <div class="form-group"><label class="form-label">Durasi (Hari)</label><input class="form-input" id="planDays" type="number" placeholder="30"></div></div>
             <div class="form-group"><label class="form-label">Rate Limit / Hari</label><input class="form-input" id="planRateLimit" type="number" min="0" value="0" placeholder="0"><div class="form-hint">0 = unlimited request per hari</div></div>
+            <div class="form-group"><label class="form-label">Fitur Akses</label><div class="feature-checks"><label class="checkbox-label"><input type="checkbox" id="planGopay" checked> GoPay Merchant</label><label class="checkbox-label"><input type="checkbox" id="planOrderkouta" checked> OrderKuota</label><label class="checkbox-label"><input type="checkbox" id="planDigiflazz" checked> Digiflazz Tools</label><label class="checkbox-label"><input type="checkbox" id="planWaGateway" checked> WA Gateway</label></div></div>
             <div class="form-group"><label class="form-label">Deskripsi</label><input class="form-input" id="planDesc" placeholder="Deskripsi paket"></div>
             <div class="form-group"><label class="form-label">Benefits (pisah koma)</label><input class="form-input" id="planBenefits" placeholder="1000 req/hari, Auto-polling, Webhook"></div>`, async () => {
             const name=document.getElementById('planName').value.trim();const price=document.getElementById('planPrice').value;const duration_days=document.getElementById('planDays').value;
             if (!name||!price||!duration_days) return Toast.error('Semua field wajib diisi!');
             const rate_limit=parseInt(document.getElementById('planRateLimit').value)||0;
             const benefits=document.getElementById('planBenefits').value.split(',').map(b=>b.trim()).filter(Boolean);
-            const r=await Auth.apiFetch('/api/admin/subscription-plans',{method:'POST',body:JSON.stringify({name,price,duration_days,description:document.getElementById('planDesc').value.trim(),benefits,rate_limit})});
+            const allow_gopay=document.getElementById('planGopay').checked;
+            const allow_orderkouta=document.getElementById('planOrderkouta').checked;
+            const allow_digiflazz=document.getElementById('planDigiflazz').checked;
+            const allow_wa_gateway=document.getElementById('planWaGateway').checked;
+            const r=await Auth.apiFetch('/api/admin/subscription-plans',{method:'POST',body:JSON.stringify({name,price,duration_days,description:document.getElementById('planDesc').value.trim(),benefits,rate_limit,allow_gopay,allow_orderkouta,allow_digiflazz,allow_wa_gateway})});
             if(r?.success){Toast.success('Paket berhasil dibuat!');this.closeModal();this.renderLangganan();}else Toast.error(r?.message||'Gagal');
         });
     },
@@ -440,10 +446,15 @@ const App = {
             <div class="form-row"><div class="form-group"><label class="form-label">Harga</label><input class="form-input" id="planPrice" type="number" value="${p.price}"></div>
             <div class="form-group"><label class="form-label">Durasi (Hari)</label><input class="form-input" id="planDays" type="number" value="${p.duration_days}"></div></div>
             <div class="form-group"><label class="form-label">Rate Limit / Hari</label><input class="form-input" id="planRateLimit" type="number" min="0" value="${p.rate_limit||0}"><div class="form-hint">0 = unlimited. Perubahan otomatis diterapkan ke semua user aktif di paket ini.</div></div>
+            <div class="form-group"><label class="form-label">Fitur Akses</label><div class="feature-checks"><label class="checkbox-label"><input type="checkbox" id="planGopay" ${p.allow_gopay!==0?'checked':''}> GoPay Merchant</label><label class="checkbox-label"><input type="checkbox" id="planOrderkouta" ${p.allow_orderkouta!==0?'checked':''}> OrderKuota</label><label class="checkbox-label"><input type="checkbox" id="planDigiflazz" ${p.allow_digiflazz!==0?'checked':''}> Digiflazz Tools</label><label class="checkbox-label"><input type="checkbox" id="planWaGateway" ${p.allow_wa_gateway!==0?'checked':''}> WA Gateway</label></div></div>
             <div class="form-group"><label class="form-label">Deskripsi</label><input class="form-input" id="planDesc" value="${p.description||''}"></div>
             <div class="form-group"><label class="form-label">Benefits</label><input class="form-input" id="planBenefits" value="${(p.benefits||[]).join(', ')}"></div>`, async () => {
             const rate_limit=parseInt(document.getElementById('planRateLimit').value)||0;
-            const r=await Auth.apiFetch(`/api/admin/subscription-plans/${id}`,{method:'PUT',body:JSON.stringify({name:document.getElementById('planName').value.trim(),price:document.getElementById('planPrice').value,duration_days:document.getElementById('planDays').value,description:document.getElementById('planDesc').value.trim(),benefits:document.getElementById('planBenefits').value.split(',').map(b=>b.trim()).filter(Boolean),rate_limit})});
+            const allow_gopay=document.getElementById('planGopay').checked;
+            const allow_orderkouta=document.getElementById('planOrderkouta').checked;
+            const allow_digiflazz=document.getElementById('planDigiflazz').checked;
+            const allow_wa_gateway=document.getElementById('planWaGateway').checked;
+            const r=await Auth.apiFetch(`/api/admin/subscription-plans/${id}`,{method:'PUT',body:JSON.stringify({name:document.getElementById('planName').value.trim(),price:document.getElementById('planPrice').value,duration_days:document.getElementById('planDays').value,description:document.getElementById('planDesc').value.trim(),benefits:document.getElementById('planBenefits').value.split(',').map(b=>b.trim()).filter(Boolean),rate_limit,allow_gopay,allow_orderkouta,allow_digiflazz,allow_wa_gateway})});
             if(r?.success){Toast.success(r.message);this.closeModal();this.renderLangganan();}else Toast.error(r?.message||'Gagal');
         });
     },

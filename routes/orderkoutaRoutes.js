@@ -4,8 +4,10 @@ const orderkoutaController = require('../controllers/orderkoutaController');
 const orderController = require('../controllers/orderController');
 const verifyApiKey = require('../middleware/auth');
 const { injectOrkutTokens } = require('../middleware/tokenInjector');
+const { requireFeature } = require('../middleware/featureCheck');
 
 router.use(verifyApiKey);
+router.use(requireFeature('allow_orderkouta'));
 
 router.post('/get-otp-orderkouta', orderkoutaController.requestOtp);
 router.post('/get-token-orderkouta', orderkoutaController.getToken);

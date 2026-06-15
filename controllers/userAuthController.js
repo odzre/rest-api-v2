@@ -161,6 +161,16 @@ const getProfile = async (req, res) => {
         // Cek token status
         const tokens = await db.getOne('SELECT * FROM user_tokens WHERE user_id = ?', [user.id]);
 
+        // Get feature permissions from plan
+        let features = { allow_gopay: true, allow_orderkouta: true, allow_digiflazz: true, allow_wa_gateway: true };
+        if (user.subscription_plan_id && apiKeyActive) {
+            const plan = await db.getOne('SELECT allow_gopay, allow_orderkouta, allow_digiflazz, allow_wa_gateway FROM subscription_plans WHERE id = ?', [user.subscription_plan_id]);
+            if (plan) features = { allow_gopay: !!plan.allow_gopay, allow_orderkouta: !!plan.allow_orderkouta, allow_digiflazz: !!plan.allow_digiflazz, allow_wa_gateway: !!plan.allow_wa_gateway };
+        } else if (!apiKeyActive) {
+            // No active subscription = no restrictions (free tier, only credit watermark)
+            features = { allow_gopay: true, allow_orderkouta: true, allow_digiflazz: false, allow_wa_gateway: true };
+        }
+
         return sendResponse(res, 200, true, 'Profil user.', {
             id: user.id,
             name: user.name,
@@ -172,6 +182,7 @@ const getProfile = async (req, res) => {
             subscriptionExpiresAt: user.subscription_expires_at,
             hasGopayToken: !!(tokens && tokens.gopay_access_token),
             hasOrderkoutaToken: !!(tokens && tokens.orkut_auth_token),
+            features,
             createdAt: user.created_at,
         });
     } catch (err) {
@@ -506,14 +517,14 @@ const adminGetPlans = async (req, res) => {
 /** POST /api/admin/subscription-plans */
 const adminCreatePlan = async (req, res) => {
     try {
-        const { name, price, duration_days, description, benefits, rate_limit } = req.body;
+        const { name, price, duration_days, description, benefits, rate_limit, allow_gopay, allow_orderkouta, allow_digiflazz, allow_wa_gateway } = req.body;
         if (!name || !price || !duration_days) {
             return sendResponse(res, 400, false, 'name, price, dan duration_days wajib diisi.');
         }
 
         const result = await db.run(
-            'INSERT INTO subscription_plans (name, price, duration_days, description, benefits, rate_limit, active) VALUES (?, ?, ?, ?, ?, ?, 1)',
-            [name, parseInt(price), parseInt(duration_days), description || '', JSON.stringify(benefits || []), parseInt(rate_limit) || 0]
+            'INSERT INTO subscription_plans (name, price, duration_days, description, benefits, rate_limit, allow_gopay, allow_orderkouta, allow_digiflazz, allow_wa_gateway, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)',
+            [name, parseInt(price), parseInt(duration_days), description || '', JSON.stringify(benefits || []), parseInt(rate_limit) || 0, allow_gopay ? 1 : 0, allow_orderkouta ? 1 : 0, allow_digiflazz ? 1 : 0, allow_wa_gateway ? 1 : 0]
         );
 
         const plan = await db.getOne('SELECT * FROM subscription_plans WHERE id = ?', [result.insertId]);
@@ -532,11 +543,11 @@ const adminUpdatePlan = async (req, res) => {
         const plan = await db.getOne('SELECT * FROM subscription_plans WHERE id = ?', [id]);
         if (!plan) return sendResponse(res, 404, false, 'Paket tidak ditemukan.');
 
-        const { name, price, duration_days, description, benefits, active, rate_limit } = req.body;
+        const { name, price, duration_days, description, benefits, active, rate_limit, allow_gopay, allow_orderkouta, allow_digiflazz, allow_wa_gateway } = req.body;
         const newRateLimit = rate_limit !== undefined ? parseInt(rate_limit) : (plan.rate_limit || 0);
 
         await db.run(
-            'UPDATE subscription_plans SET name = ?, price = ?, duration_days = ?, description = ?, benefits = ?, rate_limit = ?, active = ? WHERE id = ?',
+            'UPDATE subscription_plans SET name = ?, price = ?, duration_days = ?, description = ?, benefits = ?, rate_limit = ?, allow_gopay = ?, allow_orderkouta = ?, allow_digiflazz = ?, allow_wa_gateway = ?, active = ? WHERE id = ?',
             [
                 name !== undefined ? name : plan.name,
                 price !== undefined ? parseInt(price) : plan.price,
@@ -544,6 +555,10 @@ const adminUpdatePlan = async (req, res) => {
                 description !== undefined ? description : plan.description,
                 benefits !== undefined ? JSON.stringify(benefits) : (typeof plan.benefits === 'string' ? plan.benefits : JSON.stringify(plan.benefits || [])),
                 newRateLimit,
+                allow_gopay !== undefined ? (allow_gopay ? 1 : 0) : (plan.allow_gopay ?? 1),
+                allow_orderkouta !== undefined ? (allow_orderkouta ? 1 : 0) : (plan.allow_orderkouta ?? 1),
+                allow_digiflazz !== undefined ? (allow_digiflazz ? 1 : 0) : (plan.allow_digiflazz ?? 1),
+                allow_wa_gateway !== undefined ? (allow_wa_gateway ? 1 : 0) : (plan.allow_wa_gateway ?? 1),
                 active !== undefined ? (active ? 1 : 0) : plan.active,
                 id
             ]

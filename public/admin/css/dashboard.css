@@ -259,3 +259,9 @@ a, button, input, select, textarea, .nav-item, .btn, .stat-card {
 @media (min-width: 769px) {
     .hamburger-btn { display: none; }
 }
+
+/* Feature access checkboxes */
+.feature-checks { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
+.checkbox-label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); cursor: pointer; padding: 6px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); transition: all 0.15s; }
+.checkbox-label:hover { border-color: var(--accent-light); background: rgba(124, 97, 255, 0.05); }
+.checkbox-label input[type="checkbox"] { accent-color: var(--accent-light); width: 16px; height: 16px; cursor: pointer; }

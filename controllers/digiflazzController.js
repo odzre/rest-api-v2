@@ -7,25 +7,6 @@ const { sendResponse } = require('../library/response');
 const DIGI_BASE = 'https://member.digiflazz.com';
 const DIGI_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
 
-// Subscription check — only active subscribers can use Digiflazz
-async function requireSubscription(req, res) {
-    try {
-        const user = await db.getOne('SELECT api_key_active, subscription_expires_at FROM users WHERE id = ?', [req.user.userId]);
-        if (!user || !user.api_key_active) {
-            sendResponse(res, 403, false, 'Fitur ini hanya tersedia untuk user dengan langganan aktif.');
-            return false;
-        }
-        if (user.subscription_expires_at && new Date() > new Date(user.subscription_expires_at)) {
-            sendResponse(res, 403, false, 'Langganan Anda sudah expired. Perpanjang untuk menggunakan fitur ini.');
-            return false;
-        }
-        return true;
-    } catch (e) {
-        sendResponse(res, 500, false, 'Gagal memeriksa status langganan.');
-        return false;
-    }
-}
-
 // ==========================================
 // HELPER: Buat axios client dari cookie JSON
 // ==========================================
@@ -57,9 +38,6 @@ function digiHeaders(csrfToken, referer) {
 // ==========================================
 const getSessionStatus = async (req, res) => {
     try {
-        const allowed = await requireSubscription(req, res);
-        if (!allowed) return;
-
         const userId = req.user.userId;
         const tokens = await db.getOne('SELECT digi_cookie, digi_saved_at FROM user_tokens WHERE user_id = ?', [userId]);
 
