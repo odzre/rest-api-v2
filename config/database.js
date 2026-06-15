@@ -141,6 +141,14 @@ async function init() {
         try { await conn.query('ALTER TABLE subscription_plans ADD COLUMN sort_order INT DEFAULT 0 AFTER allow_wa_gateway'); } catch(e) {}
 
         await conn.query(`
+            CREATE TABLE IF NOT EXISTS settings (
+                \`key\` VARCHAR(100) PRIMARY KEY,
+                \`value\` LONGTEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        `);
+
+        await conn.query(`
             CREATE TABLE IF NOT EXISTS admins (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 username VARCHAR(100) UNIQUE NOT NULL,
