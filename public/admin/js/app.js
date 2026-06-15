@@ -49,13 +49,13 @@ const App = {
         this.currentPage = page;
         location.hash = page;
         document.querySelectorAll('.nav-item[data-page]').forEach(i => i.classList.toggle('active', i.dataset.page === page));
-        const titles = { dashboard: ['Dashboard','Overview sistem API kamu'], apikeys: ['API Keys','Kelola kunci akses API'], logs: ['Request Logs','Riwayat request API terbaru'], notification: ['Notifikasi','Konfigurasi notifikasi Telegram / WhatsApp'], langganan: ['Langganan','Kelola paket langganan'], users: ['Users','Kelola user terdaftar'], websettings: ['Web Settings','Pengaturan website & branding'] };
+        const titles = { dashboard: ['Dashboard','Overview sistem API kamu'], apikeys: ['API Keys','Kelola kunci akses API'], logs: ['Request Logs','Riwayat request API terbaru'], notification: ['Notifikasi','Konfigurasi notifikasi Telegram / WhatsApp'], langganan: ['Langganan','Kelola paket langganan'], users: ['Users','Kelola user terdaftar'], websettings: ['Web Settings','Pengaturan website & branding'], pggopay: ['PG GoPay Merchant','Konfigurasi payment gateway QRIS'] };
         const [t, s] = titles[page] || titles.dashboard;
         document.getElementById('pageTitle').textContent = t;
         document.getElementById('pageSubtitle').textContent = s;
         document.getElementById('headerActions').innerHTML = '';
         document.getElementById('mainBody').innerHTML = '<div class="page-content" id="pageContent"></div>';
-        const r = { dashboard: () => this.renderDashboard(), apikeys: () => this.renderApiKeys(), logs: () => this.renderLogs(), notification: () => this.renderNotification(), langganan: () => this.renderLangganan(), users: () => this.renderUsersPage(), websettings: () => this.renderWebSettings() };
+        const r = { dashboard: () => this.renderDashboard(), apikeys: () => this.renderApiKeys(), logs: () => this.renderLogs(), notification: () => this.renderNotification(), langganan: () => this.renderLangganan(), users: () => this.renderUsersPage(), websettings: () => this.renderWebSettings(), pggopay: () => this.renderPgGopay() };
         (r[page] || r.dashboard)();
     },
 
@@ -564,10 +564,36 @@ const App = {
         btn.disabled = false;
         if (r?.success) {
             Toast.success('Site config berhasil disimpan!');
-            document.getElementById('cfgSaveStatus').textContent = 'Tersimpan ✓';
+            document.getElementById('cfgSaveStatus').textContent = 'Tersimpan';
             setTimeout(() => { const s = document.getElementById('cfgSaveStatus'); if(s) s.textContent = ''; }, 3000);
         } else Toast.error(r?.message || 'Gagal menyimpan.');
-    }
+    },
+
+    // PG GOPAY MERCHANT
+    async renderPgGopay() {
+        const el = document.getElementById('pageContent');
+        el.innerHTML = '<div class="skeleton" style="height:200px"></div>';
+        const res = await Auth.apiFetch('/api/admin/settings/pg-gopay');
+        const d = res?.data || { api_key: '', code_qris: '', fee_percent: 0.7, random_digits: 3 };
+        el.innerHTML = `<div class="settings-section" style="max-width:600px">
+            <div class="section-title">${IC.shield} Payment Gateway - GoPay Merchant</div>
+            <p style="color:var(--text-muted);font-size:13px;margin-bottom:20px">Konfigurasi payment gateway untuk pembelian langganan otomatis via QRIS.</p>
+            <div class="form-group"><label class="form-label">API Key</label><input class="form-input" id="pgApiKey" value="${d.api_key}" placeholder="API Key milik admin (x-api-key)"><div class="form-hint">API Key yang sudah tersimpan token GoPay Merchant-nya</div></div>
+            <div class="form-group"><label class="form-label">Code QRIS (Static)</label><textarea class="form-input" id="pgCodeQris" rows="3" placeholder="000201..." style="font-family:var(--font-mono);font-size:12px;resize:vertical">${d.code_qris}</textarea><div class="form-hint">String QRIS statis dari GoPay Merchant Anda</div></div>
+            <div class="form-row"><div class="form-group"><label class="form-label">Fee Persentase (%)</label><input class="form-input" id="pgFeePercent" type="number" step="0.1" min="0" value="${d.fee_percent}" placeholder="0.7"><div class="form-hint">Ditambahkan ke harga paket</div></div>
+            <div class="form-group"><label class="form-label">Digit Random</label><select class="form-input" id="pgRandomDigits"><option value="2" ${d.random_digits==2?'selected':''}>2 Digit (10-99)</option><option value="3" ${d.random_digits==3?'selected':''}>3 Digit (100-999)</option><option value="4" ${d.random_digits==4?'selected':''}>4 Digit (1000-9999)</option></select><div class="form-hint">Kode unik di akhir nominal</div></div></div>
+            <button class="btn btn-primary" onclick="App.savePgGopay()" style="margin-top:8px">${IC.check} Simpan Pengaturan</button>
+        </div>`;
+    },
+    async savePgGopay() {
+        const api_key = document.getElementById('pgApiKey').value.trim();
+        const code_qris = document.getElementById('pgCodeQris').value.trim();
+        const fee_percent = document.getElementById('pgFeePercent').value;
+        const random_digits = document.getElementById('pgRandomDigits').value;
+        if (!api_key || !code_qris) return Toast.error('API Key dan Code QRIS wajib diisi!');
+        const r = await Auth.apiFetch('/api/admin/settings/pg-gopay', { method: 'PUT', body: JSON.stringify({ api_key, code_qris, fee_percent, random_digits }) });
+        if (r?.success) Toast.success(r.message); else Toast.error(r?.message || 'Gagal menyimpan');
+    },
 };
 
 const Toast = {

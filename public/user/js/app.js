@@ -80,11 +80,25 @@ const App={
         }
         el.innerHTML=statusHtml+`<div class="section-title">${IC.box} Pilih Paket Langganan</div><div class="plans-grid page-content">${plans.map(p=>{
             const benefits=(p.benefits||[]).map(b=>`<li>${IC.check} ${b}</li>`).join('');
-            return`<div class="plan-card"><div class="plan-name">${p.name}</div><div class="plan-price">Rp ${p.price.toLocaleString('id-ID')}</div><div class="plan-duration">${p.duration_days} hari masa aktif</div><div class="plan-desc">${p.description||''}</div>${benefits?`<ul class="plan-benefits">${benefits}</ul>`:''}<button class="btn btn-primary plan-cta" onclick="App.requestSubscription(${p.id},'${p.name.replace(/'/g,"\\'")}')">Hubungi Admin</button></div>`;
+            return`<div class="plan-card"><div class="plan-name">${p.name}</div><div class="plan-price">Rp ${p.price.toLocaleString('id-ID')}</div><div class="plan-duration">${p.duration_days} hari masa aktif</div><div class="plan-desc">${p.description||''}</div>${benefits?`<ul class="plan-benefits">${benefits}</ul>`:''}<button class="btn btn-primary plan-cta" id="buyBtn${p.id}" onclick="App.buySubscription(${p.id},'${p.name.replace(/'/g,"\\'")}')">Beli Sekarang</button></div>`;
         }).join('')}</div>`;
     },
-    requestSubscription(planId,planName){
-        Toast.info(`Untuk berlangganan paket "${planName}", silakan hubungi admin untuk aktivasi.`);
+    async buySubscription(planId,planName){
+        if(!confirm(`Beli paket "${planName}"? Kamu akan diarahkan ke halaman pembayaran QRIS.`))return;
+        const btn=document.getElementById('buyBtn'+planId);
+        if(btn){btn.disabled=true;btn.textContent='Memproses...';}
+        try{
+            const r=await UserAuth.apiFetch('/api/user/checkout',{method:'POST',body:JSON.stringify({plan_id:planId})});
+            if(r?.success&&r.data?.reffid){
+                window.location.href=`/check-out/invoice/${r.data.reffid}`;
+            }else{
+                Toast.error(r?.message||'Gagal membuat checkout.');
+                if(btn){btn.disabled=false;btn.textContent='Beli Sekarang';}
+            }
+        }catch(e){
+            Toast.error('Terjadi kesalahan.');
+            if(btn){btn.disabled=false;btn.textContent='Beli Sekarang';}
+        }
     },
 
     // GOPAY MERCHANT

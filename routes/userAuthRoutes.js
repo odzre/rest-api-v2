@@ -54,5 +54,8 @@ router.post('/wa/commands', verifyUser, waCtrl.createCommand);
 router.put('/wa/commands/:id', verifyUser, waCtrl.editCommand);
 router.delete('/wa/commands/:id', verifyUser, waCtrl.removeCommand);
 router.get('/wa/logs', verifyUser, waCtrl.getWaLogs);
+// Checkout (subscription purchase)
+const checkoutCtrl = require('../controllers/checkoutController');
+router.post('/checkout', verifyUser, checkoutCtrl.createCheckout);
 
 module.exports = router;

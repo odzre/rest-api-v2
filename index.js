@@ -64,6 +64,11 @@ app.get('/user/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'publ
 app.get('/user/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'user', 'login.html')));
 app.get('/user/register', (req, res) => res.sendFile(path.join(__dirname, 'public', 'user', 'register.html')));
 
+// Checkout page + public status API
+app.get('/check-out/invoice/:reffid', (req, res) => res.sendFile(path.join(__dirname, 'public', 'check-out.html')));
+const checkoutCtrl = require('./controllers/checkoutController');
+app.get('/api/checkout/status/:reffid', checkoutCtrl.getCheckoutStatus);
+
 // ==========================================
 // OPENAPI SPEC
 // ==========================================

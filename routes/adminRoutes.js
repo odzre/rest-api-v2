@@ -50,4 +50,8 @@ router.put('/site-config', verifyAdmin, (req, res) => {
     }
 });
 
+// PG GoPay Merchant settings
+router.get('/settings/pg-gopay', verifyAdmin, adminController.getPgGopaySettings);
+router.put('/settings/pg-gopay', verifyAdmin, adminController.updatePgGopaySettings);
+
 module.exports = router;
