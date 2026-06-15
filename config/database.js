@@ -133,6 +133,12 @@ async function init() {
         try { await conn.query('ALTER TABLE user_tokens ADD COLUMN digi_cookie LONGTEXT DEFAULT NULL AFTER orkut_saved_at'); } catch(e) {}
         try { await conn.query('ALTER TABLE user_tokens ADD COLUMN digi_saved_at DATETIME DEFAULT NULL AFTER digi_cookie'); } catch(e) {}
 
+        // Safe migration: tambah kolom feature access di subscription_plans
+        try { await conn.query('ALTER TABLE subscription_plans ADD COLUMN allow_gopay TINYINT(1) DEFAULT 1 AFTER rate_limit'); } catch(e) {}
+        try { await conn.query('ALTER TABLE subscription_plans ADD COLUMN allow_orderkouta TINYINT(1) DEFAULT 1 AFTER allow_gopay'); } catch(e) {}
+        try { await conn.query('ALTER TABLE subscription_plans ADD COLUMN allow_digiflazz TINYINT(1) DEFAULT 1 AFTER allow_orderkouta'); } catch(e) {}
+        try { await conn.query('ALTER TABLE subscription_plans ADD COLUMN allow_wa_gateway TINYINT(1) DEFAULT 1 AFTER allow_digiflazz'); } catch(e) {}
+
         await conn.query(`
             CREATE TABLE IF NOT EXISTS admins (
                 id INT AUTO_INCREMENT PRIMARY KEY,
