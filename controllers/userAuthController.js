@@ -332,7 +332,7 @@ const getDashboardStats = async (req, res) => {
  */
 const getSubscriptionPlans = async (req, res) => {
     try {
-        const plans = await db.query('SELECT * FROM subscription_plans WHERE active = 1 ORDER BY price ASC');
+        const plans = await db.query('SELECT * FROM subscription_plans WHERE active = 1 ORDER BY sort_order ASC, id ASC');
         // Parse benefits JSON
         const parsed = plans.map(p => ({
             ...p,
@@ -502,7 +502,7 @@ const deleteOrderkoutaToken = async (req, res) => {
 /** GET /api/admin/subscription-plans */
 const adminGetPlans = async (req, res) => {
     try {
-        const plans = await db.query('SELECT * FROM subscription_plans ORDER BY id ASC');
+        const plans = await db.query('SELECT * FROM subscription_plans ORDER BY sort_order ASC, id ASC');
         const parsed = plans.map(p => ({
             ...p,
             benefits: typeof p.benefits === 'string' ? JSON.parse(p.benefits) : (p.benefits || []),
@@ -517,14 +517,14 @@ const adminGetPlans = async (req, res) => {
 /** POST /api/admin/subscription-plans */
 const adminCreatePlan = async (req, res) => {
     try {
-        const { name, price, duration_days, description, benefits, rate_limit, allow_gopay, allow_orderkouta, allow_digiflazz, allow_wa_gateway } = req.body;
+        const { name, price, duration_days, description, benefits, rate_limit, allow_gopay, allow_orderkouta, allow_digiflazz, allow_wa_gateway, sort_order } = req.body;
         if (!name || !price || !duration_days) {
             return sendResponse(res, 400, false, 'name, price, dan duration_days wajib diisi.');
         }
 
         const result = await db.run(
-            'INSERT INTO subscription_plans (name, price, duration_days, description, benefits, rate_limit, allow_gopay, allow_orderkouta, allow_digiflazz, allow_wa_gateway, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)',
-            [name, parseInt(price), parseInt(duration_days), description || '', JSON.stringify(benefits || []), parseInt(rate_limit) || 0, allow_gopay ? 1 : 0, allow_orderkouta ? 1 : 0, allow_digiflazz ? 1 : 0, allow_wa_gateway ? 1 : 0]
+            'INSERT INTO subscription_plans (name, price, duration_days, description, benefits, rate_limit, allow_gopay, allow_orderkouta, allow_digiflazz, allow_wa_gateway, sort_order, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)',
+            [name, parseInt(price), parseInt(duration_days), description || '', JSON.stringify(benefits || []), parseInt(rate_limit) || 0, allow_gopay ? 1 : 0, allow_orderkouta ? 1 : 0, allow_digiflazz ? 1 : 0, allow_wa_gateway ? 1 : 0, parseInt(sort_order) || 0]
         );
 
         const plan = await db.getOne('SELECT * FROM subscription_plans WHERE id = ?', [result.insertId]);
@@ -543,11 +543,11 @@ const adminUpdatePlan = async (req, res) => {
         const plan = await db.getOne('SELECT * FROM subscription_plans WHERE id = ?', [id]);
         if (!plan) return sendResponse(res, 404, false, 'Paket tidak ditemukan.');
 
-        const { name, price, duration_days, description, benefits, active, rate_limit, allow_gopay, allow_orderkouta, allow_digiflazz, allow_wa_gateway } = req.body;
+        const { name, price, duration_days, description, benefits, active, rate_limit, allow_gopay, allow_orderkouta, allow_digiflazz, allow_wa_gateway, sort_order } = req.body;
         const newRateLimit = rate_limit !== undefined ? parseInt(rate_limit) : (plan.rate_limit || 0);
 
         await db.run(
-            'UPDATE subscription_plans SET name = ?, price = ?, duration_days = ?, description = ?, benefits = ?, rate_limit = ?, allow_gopay = ?, allow_orderkouta = ?, allow_digiflazz = ?, allow_wa_gateway = ?, active = ? WHERE id = ?',
+            'UPDATE subscription_plans SET name = ?, price = ?, duration_days = ?, description = ?, benefits = ?, rate_limit = ?, allow_gopay = ?, allow_orderkouta = ?, allow_digiflazz = ?, allow_wa_gateway = ?, sort_order = ?, active = ? WHERE id = ?',
             [
                 name !== undefined ? name : plan.name,
                 price !== undefined ? parseInt(price) : plan.price,
@@ -559,6 +559,7 @@ const adminUpdatePlan = async (req, res) => {
                 allow_orderkouta !== undefined ? (allow_orderkouta ? 1 : 0) : (plan.allow_orderkouta ?? 1),
                 allow_digiflazz !== undefined ? (allow_digiflazz ? 1 : 0) : (plan.allow_digiflazz ?? 1),
                 allow_wa_gateway !== undefined ? (allow_wa_gateway ? 1 : 0) : (plan.allow_wa_gateway ?? 1),
+                sort_order !== undefined ? parseInt(sort_order) : (plan.sort_order || 0),
                 active !== undefined ? (active ? 1 : 0) : plan.active,
                 id
             ]
