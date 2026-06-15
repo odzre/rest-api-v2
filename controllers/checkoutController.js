@@ -145,8 +145,9 @@ const createCheckout = async (req, res) => {
             checkout_url: `/check-out/invoice/${reffid}`,
         });
     } catch (err) {
-        console.error('[Checkout] Error:', err.message);
-        return sendResponse(res, 500, false, 'Gagal membuat checkout: ' + err.message);
+        const errMsg = err instanceof Error ? err.message : (typeof err === 'string' ? err : JSON.stringify(err));
+        console.error('[Checkout] Error:', errMsg, err);
+        return sendResponse(res, 500, false, 'Gagal membuat checkout: ' + errMsg);
     }
 };
 
