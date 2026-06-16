@@ -189,7 +189,7 @@ const testNotification = async (req, res) => {
 const getPgGopaySettings = async (req, res) => {
     try {
         const row = await db.getOne("SELECT `value` FROM settings WHERE `key` = 'pg_gopay'");
-        const data = row ? JSON.parse(row.value) : { api_key: '', code_qris: '', fee_percent: 0.7, random_digits: 3 };
+        const data = row ? (typeof row.value === 'string' ? JSON.parse(row.value) : row.value) : { api_key: '', code_qris: '', fee_percent: 0.7, random_digits: 3 };
         return sendResponse(res, 200, true, 'PG GoPay settings.', data);
     } catch (err) {
         console.error('[Admin] PG settings error:', err.message);
@@ -209,14 +209,19 @@ const updatePgGopaySettings = async (req, res) => {
             fee_percent: parseFloat(fee_percent) || 0,
             random_digits: parseInt(random_digits) || 3,
         };
+        const jsonStr = JSON.stringify(data);
+        console.log('[Admin] Saving PG settings:', jsonStr.substring(0, 100) + '...');
         await db.run(
-            "INSERT INTO settings (`key`, `value`) VALUES ('pg_gopay', ?) ON DUPLICATE KEY UPDATE `value` = ?",
-            [JSON.stringify(data), JSON.stringify(data)]
+            "INSERT INTO settings (`key`, `value`) VALUES ('pg_gopay', ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
+            [jsonStr]
         );
+        // Verify save
+        const verify = await db.getOne("SELECT `value` FROM settings WHERE `key` = 'pg_gopay'");
+        console.log('[Admin] PG settings saved, verify:', verify ? 'OK' : 'FAILED');
         return sendResponse(res, 200, true, 'PG GoPay settings berhasil disimpan.', data);
     } catch (err) {
-        console.error('[Admin] PG settings update error:', err.message);
-        return sendResponse(res, 500, false, 'Terjadi kesalahan server.');
+        console.error('[Admin] PG settings update error:', err.message || err);
+        return sendResponse(res, 500, false, 'Gagal menyimpan: ' + (err.message || JSON.stringify(err)));
     }
 };
 

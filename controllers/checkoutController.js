@@ -54,7 +54,7 @@ const createCheckout = async (req, res) => {
         // Get PG settings
         const settingsRow = await db.getOne("SELECT `value` FROM settings WHERE `key` = 'pg_gopay'");
         if (!settingsRow) return sendResponse(res, 500, false, 'Payment gateway belum dikonfigurasi. Hubungi admin.');
-        const pg = JSON.parse(settingsRow.value);
+        const pg = typeof settingsRow.value === 'string' ? JSON.parse(settingsRow.value) : settingsRow.value;
         if (!pg.code_qris || !pg.api_key) return sendResponse(res, 500, false, 'Payment gateway belum dikonfigurasi lengkap. Hubungi admin.');
 
         // Get admin tokens from api_key
