@@ -88,7 +88,7 @@ const createCheckout = async (req, res) => {
         const merchantName = extractMerchantName(pg.code_qris);
 
         // Get user info
-        const user = await db.getOne('SELECT username, email FROM users WHERE id = ?', [userId]);
+        const user = await db.getOne('SELECT name, email FROM users WHERE id = ?', [userId]);
 
         const expiredMinutes = 30;
         const now = new Date();
@@ -101,7 +101,7 @@ const createCheckout = async (req, res) => {
             plan_id: plan.id,
             plan_name: plan.name,
             user_id: userId,
-            username: user?.username || '',
+            username: user?.name || '',
             base_price: basePrice,
             fee_amount: feeAmount,
             random_amount: randomAmount,
