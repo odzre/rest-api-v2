@@ -600,11 +600,11 @@ const App = {
     async renderWaNotif() {
         const el = document.getElementById('pageContent');
         el.innerHTML = '<div class="skeleton" style="height:300px"></div>';
-        const [res, usersRes] = await Promise.all([Auth.apiFetch('/api/admin/settings/wa-notifications'), Auth.apiFetch('/api/admin/users')]);
+        const [res, keysRes] = await Promise.all([Auth.apiFetch('/api/admin/settings/wa-notifications'), Auth.apiFetch('/api/admin/apikeys')]);
         const d = res?.data || { admin_user_id: null, templates: {} };
         this._waNotifData = d;
-        const users = usersRes?.data || [];
-        const userOpts = users.map(u => `<option value="${u.id}" ${d.admin_user_id==u.id?'selected':''}>${u.name} (${u.email})</option>`).join('');
+        const keys = keysRes?.data || [];
+        const keyOpts = keys.filter(k => k.user_id).map(k => `<option value="${k.user_id}" ${d.admin_user_id==k.user_id?'selected':''}>${k.label || k.key} (${k.key})</option>`).join('');
         const tplTypes = [
             { key: 'payment_pending', label: 'Pembayaran Pending', desc: 'Dikirim saat user membuat checkout' },
             { key: 'payment_success', label: 'Pembayaran Berhasil', desc: 'Dikirim saat pembayaran terdeteksi' },
@@ -627,8 +627,8 @@ const App = {
         el.innerHTML = `<div style="max-width:700px">
             <div class="settings-section">
                 <div class="section-title">${IC.shield} Konfigurasi WA Notifikasi</div>
-                <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Notifikasi dikirim dari WA session milik user admin yang dipilih.</p>
-                <div class="form-group"><label class="form-label">Admin User (Pengirim)</label><select class="form-input" id="waAdminUserId"><option value="">-- Pilih User --</option>${userOpts}</select><div class="form-hint">User ini harus sudah connect WA Gateway di dashboard-nya</div></div>
+                <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Notifikasi dikirim dari WA session milik pemilik API Key yang dipilih.</p>
+                <div class="form-group"><label class="form-label">API Key (Pengirim)</label><select class="form-input" id="waAdminUserId"><option value="">-- Pilih API Key --</option>${keyOpts}</select><div class="form-hint">Pemilik API Key ini harus sudah connect WA Gateway di dashboard-nya</div></div>
             </div>
             <div class="settings-section" style="margin-top:16px">
                 <div class="section-title">Variable yang Tersedia</div>
