@@ -33,7 +33,7 @@ const DEFAULT_TEMPLATES = {
 async function getSettings() {
     try {
         const row = await db.getOne("SELECT `value` FROM settings WHERE `key` = ?", [SETTINGS_KEY]);
-        if (!row) return { admin_user_id: null, templates: DEFAULT_TEMPLATES };
+        if (!row) return { api_key: '', templates: DEFAULT_TEMPLATES };
         const data = typeof row.value === 'string' ? JSON.parse(row.value) : row.value;
         // Merge defaults for any missing templates
         if (!data.templates) data.templates = {};
@@ -43,7 +43,7 @@ async function getSettings() {
         return data;
     } catch (err) {
         console.error('[WaNotifier] getSettings error:', err.message);
-        return { admin_user_id: null, templates: DEFAULT_TEMPLATES };
+        return { api_key: '', templates: DEFAULT_TEMPLATES };
     }
 }
 
@@ -56,6 +56,15 @@ async function saveSettings(data) {
         "INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
         [SETTINGS_KEY, jsonStr]
     );
+}
+
+/**
+ * Resolve user_id from api_key string
+ */
+async function resolveUserId(apiKey) {
+    if (!apiKey) return null;
+    const row = await db.getOne('SELECT user_id FROM api_keys WHERE `key` = ?', [apiKey]);
+    return row?.user_id || null;
 }
 
 /**
@@ -112,8 +121,14 @@ async function sendNotification(type, vars, toNumber) {
         }
 
         const settings = await getSettings();
-        if (!settings.admin_user_id) {
-            console.log(`[WaNotifier] Skip ${type}: admin_user_id not configured`);
+        if (!settings.api_key) {
+            console.log(`[WaNotifier] Skip ${type}: api_key not configured`);
+            return false;
+        }
+
+        const userId = await resolveUserId(settings.api_key);
+        if (!userId) {
+            console.log(`[WaNotifier] Skip ${type}: api_key invalid, no user_id found`);
             return false;
         }
 
@@ -124,7 +139,7 @@ async function sendNotification(type, vars, toNumber) {
         }
 
         const message = replaceVariables(template.text, vars);
-        await waGateway.sendMessage(settings.admin_user_id, toNumber, message);
+        await waGateway.sendMessage(userId, toNumber, message);
         console.log(`[WaNotifier] Sent ${type} to ${toNumber}`);
         return true;
     } catch (err) {
@@ -174,7 +189,7 @@ async function notifyPaymentSuccess(userId, order, expiresAt) {
 async function checkExpiringSubscriptions(req) {
     try {
         const settings = await getSettings();
-        if (!settings.admin_user_id) return;
+        if (!settings.api_key) return;
 
         const daysBefore = settings.templates?.expiring_soon?.days_before || 3;
         if (!settings.templates?.expiring_soon?.enabled) return;
@@ -233,7 +248,7 @@ async function checkExpiringSubscriptions(req) {
 async function checkExpiredSubscriptions(req) {
     try {
         const settings = await getSettings();
-        if (!settings.admin_user_id) return;
+        if (!settings.api_key) return;
 
         // Find users whose subscription just expired (still active but past expiry)
         const users = await db.query(
@@ -283,7 +298,10 @@ async function checkExpiredSubscriptions(req) {
  */
 async function sendBroadcast(message, delayMs = 3000) {
     const settings = await getSettings();
-    if (!settings.admin_user_id) throw new Error('Admin user ID belum dikonfigurasi.');
+    if (!settings.api_key) throw new Error('API Key belum dikonfigurasi di WA Notifikasi.');
+
+    const userId = await resolveUserId(settings.api_key);
+    if (!userId) throw new Error('API Key tidak valid atau tidak terhubung ke user.');
 
     const users = await db.query(
         "SELECT id, name, whatsapp FROM users WHERE whatsapp IS NOT NULL AND whatsapp != ''"
@@ -292,7 +310,7 @@ async function sendBroadcast(message, delayMs = 3000) {
     if (users.length === 0) throw new Error('Tidak ada user dengan nomor WhatsApp.');
 
     const numbers = users.map(u => u.whatsapp);
-    const results = await waGateway.broadcast(settings.admin_user_id, numbers, message, delayMs);
+    const results = await waGateway.broadcast(userId, numbers, message, delayMs);
     return { total: numbers.length, results };
 }
 
