@@ -422,6 +422,22 @@ const startServer = async () => {
             console.log(`  🗄️  Database    : MySQL (${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME})`);
             console.log('══════════════════════════════════════════');
             console.log('');
+
+            // WA Notification cron — check every 6 hours
+            const waNotifier = require('./services/waNotifier');
+            const SIX_HOURS = 6 * 60 * 60 * 1000;
+            const runWaCron = async () => {
+                try {
+                    console.log('[Cron] Checking subscription expirations...');
+                    await waNotifier.checkExpiredSubscriptions();
+                    await waNotifier.checkExpiringSubscriptions();
+                } catch (e) {
+                    console.error('[Cron] WA notification error:', e.message);
+                }
+            };
+            // Run once after 30 seconds, then every 6 hours
+            setTimeout(runWaCron, 30000);
+            setInterval(runWaCron, SIX_HOURS);
         });
     } catch (err) {
         console.error('❌ Gagal start:', err.message, err.stack);

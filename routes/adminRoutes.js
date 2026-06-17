@@ -53,5 +53,9 @@ router.put('/site-config', verifyAdmin, (req, res) => {
 // PG GoPay Merchant settings
 router.get('/settings/pg-gopay', verifyAdmin, adminController.getPgGopaySettings);
 router.put('/settings/pg-gopay', verifyAdmin, adminController.updatePgGopaySettings);
+// WA Notification settings
+router.get('/settings/wa-notifications', verifyAdmin, adminController.getWaNotifSettings);
+router.put('/settings/wa-notifications', verifyAdmin, adminController.updateWaNotifSettings);
+router.post('/broadcast', verifyAdmin, adminController.sendBroadcast);
 
 module.exports = router;

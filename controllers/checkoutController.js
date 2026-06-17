@@ -10,6 +10,7 @@ const {
     startPollingGomerchant, getOrder, updateOrder
 } = require('../library/orderService');
 const { decrypt } = require('../library/crypto');
+const waNotifier = require('../services/waNotifier');
 
 /**
  * Extract merchant name from QRIS code string
@@ -131,6 +132,11 @@ const createCheckout = async (req, res) => {
         // Override handlePaid to auto-activate subscription
         monitorCheckout(reffid, plan, userId);
 
+        // Send WA notification (payment pending)
+        const host = `${req.protocol}://${req.get('host')}`;
+        const checkoutUrl = `${host}/check-out/invoice/${reffid}`;
+        waNotifier.notifyPaymentPending(user, { nominal: totalAmount, plan_name: plan.name, reffid }, checkoutUrl);
+
         return sendResponse(res, 200, true, 'Checkout berhasil dibuat.', {
             reffid,
             plan_name: plan.name,
@@ -183,6 +189,9 @@ function monitorCheckout(reffid, plan, userId) {
                 );
 
                 console.log(`[Checkout] Subscription activated: user=${userId}, plan=${plan.name}, expires=${expiresAt.toISOString()}`);
+
+                // Send WA notification (payment success)
+                waNotifier.notifyPaymentSuccess(userId, order, expiresAt);
             } else if (order.status === 'EXPIRED') {
                 clearInterval(checkInterval);
                 await setJSON(`checkout:${reffid}`, { ...order, status: 'EXPIRED' }, 86400);

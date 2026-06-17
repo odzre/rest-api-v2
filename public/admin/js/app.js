@@ -49,13 +49,13 @@ const App = {
         this.currentPage = page;
         location.hash = page;
         document.querySelectorAll('.nav-item[data-page]').forEach(i => i.classList.toggle('active', i.dataset.page === page));
-        const titles = { dashboard: ['Dashboard','Overview sistem API kamu'], apikeys: ['API Keys','Kelola kunci akses API'], logs: ['Request Logs','Riwayat request API terbaru'], notification: ['Notifikasi','Konfigurasi notifikasi Telegram / WhatsApp'], langganan: ['Langganan','Kelola paket langganan'], users: ['Users','Kelola user terdaftar'], websettings: ['Web Settings','Pengaturan website & branding'], pggopay: ['PG GoPay Merchant','Konfigurasi payment gateway QRIS'] };
+        const titles = { dashboard: ['Dashboard','Overview sistem API kamu'], apikeys: ['API Keys','Kelola kunci akses API'], logs: ['Request Logs','Riwayat request API terbaru'], notification: ['Notifikasi','Konfigurasi notifikasi Telegram / WhatsApp'], langganan: ['Langganan','Kelola paket langganan'], users: ['Users','Kelola user terdaftar'], websettings: ['Web Settings','Pengaturan website & branding'], pggopay: ['PG GoPay Merchant','Konfigurasi payment gateway QRIS'], wanotif: ['WA Notifikasi','Notifikasi WhatsApp & Broadcast'] };
         const [t, s] = titles[page] || titles.dashboard;
         document.getElementById('pageTitle').textContent = t;
         document.getElementById('pageSubtitle').textContent = s;
         document.getElementById('headerActions').innerHTML = '';
         document.getElementById('mainBody').innerHTML = '<div class="page-content" id="pageContent"></div>';
-        const r = { dashboard: () => this.renderDashboard(), apikeys: () => this.renderApiKeys(), logs: () => this.renderLogs(), notification: () => this.renderNotification(), langganan: () => this.renderLangganan(), users: () => this.renderUsersPage(), websettings: () => this.renderWebSettings(), pggopay: () => this.renderPgGopay() };
+        const r = { dashboard: () => this.renderDashboard(), apikeys: () => this.renderApiKeys(), logs: () => this.renderLogs(), notification: () => this.renderNotification(), langganan: () => this.renderLangganan(), users: () => this.renderUsersPage(), websettings: () => this.renderWebSettings(), pggopay: () => this.renderPgGopay(), wanotif: () => this.renderWaNotif() };
         (r[page] || r.dashboard)();
     },
 
@@ -593,6 +593,104 @@ const App = {
         if (!api_key || !code_qris) return Toast.error('API Key dan Code QRIS wajib diisi!');
         const r = await Auth.apiFetch('/api/admin/settings/pg-gopay', { method: 'PUT', body: JSON.stringify({ api_key, code_qris, fee_percent, random_digits }) });
         if (r?.success) Toast.success(r.message); else Toast.error(r?.message || 'Gagal menyimpan');
+    },
+
+    // WA NOTIFICATION & BROADCAST
+    _waNotifData: null,
+    async renderWaNotif() {
+        const el = document.getElementById('pageContent');
+        el.innerHTML = '<div class="skeleton" style="height:300px"></div>';
+        const [res, usersRes] = await Promise.all([Auth.apiFetch('/api/admin/settings/wa-notifications'), Auth.apiFetch('/api/admin/users')]);
+        const d = res?.data || { admin_user_id: null, templates: {} };
+        this._waNotifData = d;
+        const users = usersRes?.data || [];
+        const userOpts = users.map(u => `<option value="${u.id}" ${d.admin_user_id==u.id?'selected':''}>${u.name} (${u.email})</option>`).join('');
+        const tplTypes = [
+            { key: 'payment_pending', label: 'Pembayaran Pending', desc: 'Dikirim saat user membuat checkout' },
+            { key: 'payment_success', label: 'Pembayaran Berhasil', desc: 'Dikirim saat pembayaran terdeteksi' },
+            { key: 'expiring_soon', label: 'Akan Expired', desc: 'Dikirim saat langganan hampir habis' },
+            { key: 'subscription_expired', label: 'Langganan Expired', desc: 'Dikirim saat langganan habis' },
+        ];
+        let tplHtml = '';
+        for (const t of tplTypes) {
+            const tpl = d.templates?.[t.key] || { enabled: true, text: '' };
+            const extraField = t.key === 'expiring_soon' ? `<div class="form-group" style="margin-top:8px"><label class="form-label">Kirim H- (hari sebelum expired)</label><input class="form-input" id="tpl_days_${t.key}" type="number" min="1" max="30" value="${tpl.days_before||3}" style="max-width:100px"></div>` : '';
+            tplHtml += `<div class="settings-section" style="margin-bottom:16px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                    <div><div class="section-title" style="margin-bottom:2px">${t.label}</div><div class="form-hint">${t.desc}</div></div>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px"><input type="checkbox" id="tpl_en_${t.key}" ${tpl.enabled?'checked':''}> Aktif</label>
+                </div>
+                <textarea class="form-input" id="tpl_text_${t.key}" rows="4" style="font-family:var(--font-mono);font-size:12px;resize:vertical">${tpl.text||''}</textarea>
+                ${extraField}
+            </div>`;
+        }
+        el.innerHTML = `<div style="max-width:700px">
+            <div class="settings-section">
+                <div class="section-title">${IC.shield} Konfigurasi WA Notifikasi</div>
+                <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Notifikasi dikirim dari WA session milik user admin yang dipilih.</p>
+                <div class="form-group"><label class="form-label">Admin User (Pengirim)</label><select class="form-input" id="waAdminUserId"><option value="">-- Pilih User --</option>${userOpts}</select><div class="form-hint">User ini harus sudah connect WA Gateway di dashboard-nya</div></div>
+            </div>
+            <div class="settings-section" style="margin-top:16px">
+                <div class="section-title">Variable yang Tersedia</div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+                    <code style="padding:3px 8px;background:var(--bg-tertiary);border-radius:4px;font-size:11px">@user</code>
+                    <code style="padding:3px 8px;background:var(--bg-tertiary);border-radius:4px;font-size:11px">@nominal</code>
+                    <code style="padding:3px 8px;background:var(--bg-tertiary);border-radius:4px;font-size:11px">@tanggalexpired</code>
+                    <code style="padding:3px 8px;background:var(--bg-tertiary);border-radius:4px;font-size:11px">@sisawaktu</code>
+                    <code style="padding:3px 8px;background:var(--bg-tertiary);border-radius:4px;font-size:11px">@status</code>
+                    <code style="padding:3px 8px;background:var(--bg-tertiary);border-radius:4px;font-size:11px">@paket</code>
+                    <code style="padding:3px 8px;background:var(--bg-tertiary);border-radius:4px;font-size:11px">@reffid</code>
+                    <code style="padding:3px 8px;background:var(--bg-tertiary);border-radius:4px;font-size:11px">@url</code>
+                </div>
+            </div>
+            <h3 style="margin:20px 0 12px;font-size:15px;font-weight:700">Template Notifikasi</h3>
+            ${tplHtml}
+            <button class="btn btn-primary" onclick="App.saveWaNotif()" style="margin-top:4px">${IC.check} Simpan Semua Template</button>
+            <hr style="border-color:var(--border);margin:32px 0">
+            <div class="settings-section">
+                <div class="section-title">${IC.send} Broadcast ke Semua Member</div>
+                <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">Kirim pesan ke semua user yang punya nomor WhatsApp.</p>
+                <div class="form-group"><label class="form-label">Pesan Broadcast</label><textarea class="form-input" id="bcMessage" rows="5" placeholder="Tulis pesan broadcast..." style="font-size:13px;resize:vertical"></textarea></div>
+                <div class="form-group"><label class="form-label">Delay Per Pesan (ms)</label><input class="form-input" id="bcDelay" type="number" min="1000" value="3000" style="max-width:150px"><div class="form-hint">Minimal 1000ms untuk menghindari ban</div></div>
+                <button class="btn btn-primary" id="bcSendBtn" onclick="App.sendBroadcast()">${IC.send} Kirim Broadcast</button>
+                <div id="bcResult" style="margin-top:12px"></div>
+            </div>
+        </div>`;
+    },
+    async saveWaNotif() {
+        const admin_user_id = document.getElementById('waAdminUserId').value;
+        const types = ['payment_pending','payment_success','expiring_soon','subscription_expired'];
+        const templates = {};
+        for (const t of types) {
+            templates[t] = {
+                enabled: document.getElementById('tpl_en_'+t).checked,
+                text: document.getElementById('tpl_text_'+t).value,
+            };
+            if (t === 'expiring_soon') templates[t].days_before = parseInt(document.getElementById('tpl_days_'+t)?.value) || 3;
+        }
+        const r = await Auth.apiFetch('/api/admin/settings/wa-notifications', { method: 'PUT', body: JSON.stringify({ admin_user_id, templates }) });
+        if (r?.success) Toast.success(r.message); else Toast.error(r?.message || 'Gagal menyimpan');
+    },
+    async sendBroadcast() {
+        const message = document.getElementById('bcMessage').value.trim();
+        const delay_ms = parseInt(document.getElementById('bcDelay').value) || 3000;
+        if (!message) return Toast.error('Pesan broadcast wajib diisi!');
+        if (!confirm('Kirim broadcast ke semua member?')) return;
+        const btn = document.getElementById('bcSendBtn');
+        btn.disabled = true; btn.textContent = 'Mengirim...';
+        document.getElementById('bcResult').innerHTML = '<div style="color:var(--text-muted);font-size:12px">Sedang mengirim broadcast, mohon tunggu...</div>';
+        const r = await Auth.apiFetch('/api/admin/broadcast', { method: 'POST', body: JSON.stringify({ message, delay_ms }) });
+        btn.disabled = false; btn.innerHTML = `${IC.send} Kirim Broadcast`;
+        if (r?.success) {
+            const d = r.data;
+            const sent = d.results?.filter(x => x.status === 'sent').length || 0;
+            const failed = d.results?.filter(x => x.status === 'failed').length || 0;
+            document.getElementById('bcResult').innerHTML = `<div class="stat-card-wide" style="margin-top:8px"><div class="stat-label">HASIL BROADCAST</div><div style="font-size:13px;margin-top:4px">Total: ${d.total} | <span style="color:var(--green)">Terkirim: ${sent}</span> | <span style="color:var(--red)">Gagal: ${failed}</span></div></div>`;
+            Toast.success(r.message);
+        } else {
+            document.getElementById('bcResult').innerHTML = '';
+            Toast.error(r?.message || 'Gagal broadcast');
+        }
     },
 };
 

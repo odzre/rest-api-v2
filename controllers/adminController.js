@@ -225,4 +225,55 @@ const updatePgGopaySettings = async (req, res) => {
     }
 };
 
-module.exports = { login, logout, getProfile, getDashboardStats, getRequestLogs, getNotificationSettings, updateNotificationSettings, testNotification, getPgGopaySettings, updatePgGopaySettings };
+// ==========================================
+// WA NOTIFICATION SETTINGS
+// ==========================================
+const waNotifier = require('../services/waNotifier');
+
+/**
+ * GET /api/admin/settings/wa-notifications
+ */
+const getWaNotifSettings = async (req, res) => {
+    try {
+        const data = await waNotifier.getSettings();
+        return sendResponse(res, 200, true, 'WA notification settings.', data);
+    } catch (err) {
+        console.error('[Admin] WA notif settings error:', err.message);
+        return sendResponse(res, 500, false, 'Terjadi kesalahan server.');
+    }
+};
+
+/**
+ * PUT /api/admin/settings/wa-notifications
+ */
+const updateWaNotifSettings = async (req, res) => {
+    try {
+        const { admin_user_id, templates } = req.body;
+        const data = {
+            admin_user_id: parseInt(admin_user_id) || null,
+            templates: templates || waNotifier.DEFAULT_TEMPLATES,
+        };
+        await waNotifier.saveSettings(data);
+        return sendResponse(res, 200, true, 'WA notification settings berhasil disimpan.', data);
+    } catch (err) {
+        console.error('[Admin] WA notif update error:', err.message);
+        return sendResponse(res, 500, false, 'Gagal menyimpan: ' + (err.message || ''));
+    }
+};
+
+/**
+ * POST /api/admin/broadcast
+ */
+const sendBroadcast = async (req, res) => {
+    try {
+        const { message, delay_ms } = req.body;
+        if (!message || !message.trim()) return sendResponse(res, 400, false, 'Pesan broadcast wajib diisi.');
+        const result = await waNotifier.sendBroadcast(message.trim(), parseInt(delay_ms) || 3000);
+        return sendResponse(res, 200, true, `Broadcast selesai. ${result.total} pesan diproses.`, result);
+    } catch (err) {
+        console.error('[Admin] Broadcast error:', err.message);
+        return sendResponse(res, 500, false, 'Gagal broadcast: ' + (err.message || ''));
+    }
+};
+
+module.exports = { login, logout, getProfile, getDashboardStats, getRequestLogs, getNotificationSettings, updateNotificationSettings, testNotification, getPgGopaySettings, updatePgGopaySettings, getWaNotifSettings, updateWaNotifSettings, sendBroadcast };
