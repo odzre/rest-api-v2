@@ -600,11 +600,9 @@ const App = {
     async renderWaNotif() {
         const el = document.getElementById('pageContent');
         el.innerHTML = '<div class="skeleton" style="height:300px"></div>';
-        const [res, keysRes] = await Promise.all([Auth.apiFetch('/api/admin/settings/wa-notifications'), Auth.apiFetch('/api/admin/apikeys')]);
-        const d = res?.data || { admin_user_id: null, templates: {} };
+        const [res] = await Promise.all([Auth.apiFetch('/api/admin/settings/wa-notifications')]);
+        const d = res?.data || { api_key: '', templates: {} };
         this._waNotifData = d;
-        const keys = keysRes?.data || [];
-        const keyOpts = keys.filter(k => k.user_id).map(k => `<option value="${k.user_id}" ${d.admin_user_id==k.user_id?'selected':''}>${k.label || k.key} (${k.key})</option>`).join('');
         const tplTypes = [
             { key: 'payment_pending', label: 'Pembayaran Pending', desc: 'Dikirim saat user membuat checkout' },
             { key: 'payment_success', label: 'Pembayaran Berhasil', desc: 'Dikirim saat pembayaran terdeteksi' },
@@ -627,8 +625,8 @@ const App = {
         el.innerHTML = `<div style="max-width:700px">
             <div class="settings-section">
                 <div class="section-title">${IC.shield} Konfigurasi WA Notifikasi</div>
-                <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Notifikasi dikirim dari WA session milik pemilik API Key yang dipilih.</p>
-                <div class="form-group"><label class="form-label">API Key (Pengirim)</label><select class="form-input" id="waAdminUserId"><option value="">-- Pilih API Key --</option>${keyOpts}</select><div class="form-hint">Pemilik API Key ini harus sudah connect WA Gateway di dashboard-nya</div></div>
+                <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Notifikasi dikirim dari WA session milik pemilik API Key yang diisi.</p>
+                <div class="form-group"><label class="form-label">API Key</label><input class="form-input" id="waApiKey" value="${d.api_key||''}" placeholder="Masukkan API Key (x-api-key)"><div class="form-hint">Pemilik API Key ini harus sudah connect WA Gateway di dashboard-nya</div></div>
             </div>
             <div class="settings-section" style="margin-top:16px">
                 <div class="section-title">Variable yang Tersedia</div>
@@ -658,7 +656,7 @@ const App = {
         </div>`;
     },
     async saveWaNotif() {
-        const admin_user_id = document.getElementById('waAdminUserId').value;
+        const api_key = document.getElementById('waApiKey').value.trim();
         const types = ['payment_pending','payment_success','expiring_soon','subscription_expired'];
         const templates = {};
         for (const t of types) {
@@ -668,7 +666,7 @@ const App = {
             };
             if (t === 'expiring_soon') templates[t].days_before = parseInt(document.getElementById('tpl_days_'+t)?.value) || 3;
         }
-        const r = await Auth.apiFetch('/api/admin/settings/wa-notifications', { method: 'PUT', body: JSON.stringify({ admin_user_id, templates }) });
+        const r = await Auth.apiFetch('/api/admin/settings/wa-notifications', { method: 'PUT', body: JSON.stringify({ api_key, templates }) });
         if (r?.success) Toast.success(r.message); else Toast.error(r?.message || 'Gagal menyimpan');
     },
     async sendBroadcast() {
