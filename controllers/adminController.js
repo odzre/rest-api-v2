@@ -248,9 +248,9 @@ const getWaNotifSettings = async (req, res) => {
  */
 const updateWaNotifSettings = async (req, res) => {
     try {
-        const { admin_user_id, templates } = req.body;
+        const { api_key, templates } = req.body;
         const data = {
-            admin_user_id: parseInt(admin_user_id) || null,
+            api_key: api_key || '',
             templates: templates || waNotifier.DEFAULT_TEMPLATES,
         };
         await waNotifier.saveSettings(data);
