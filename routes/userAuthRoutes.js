@@ -58,4 +58,9 @@ router.get('/wa/logs', verifyUser, waCtrl.getWaLogs);
 const checkoutCtrl = require('../controllers/checkoutController');
 router.post('/checkout', verifyUser, checkoutCtrl.createCheckout);
 
+// Alight Motion
+const amCtrl = require('../controllers/alightMotionController');
+router.get('/alight-motion/send', verifyUser, requireFeature('allow_alight_motion'), amCtrl.sendVerification);
+router.get('/alight-motion/verif', verifyUser, requireFeature('allow_alight_motion'), amCtrl.verifyAccount);
+
 module.exports = router;

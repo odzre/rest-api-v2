@@ -23,13 +23,13 @@ const App={
     navigate(page){
         this.currentPage=page;location.hash=page;
         document.querySelectorAll('.nav-item[data-page]').forEach(i=>i.classList.toggle('active',i.dataset.page===page));
-        const titles={dashboard:['Dashboard','Overview transaksi Anda'],langganan:['Langganan','Paket langganan API'],gopay:['GoPay Merchant','Setup dan kelola token GoPay'],orderkouta:['OrderKuota','Setup dan kelola token OrderKuota'],digiflazz:['Digiflazz Tools','Update seller produk Digiflazz'],wagateway:['WA Gateway','Kelola WhatsApp Gateway'],pengaturan:['Pengaturan','Profil dan keamanan akun']};
+        const titles={dashboard:['Dashboard','Overview transaksi Anda'],langganan:['Langganan','Paket langganan API'],gopay:['GoPay Merchant','Setup dan kelola token GoPay'],orderkouta:['OrderKuota','Setup dan kelola token OrderKuota'],digiflazz:['Digiflazz Tools','Update seller produk Digiflazz'],wagateway:['WA Gateway','Kelola WhatsApp Gateway'],alightmotion:['Alight Motion','Upgrade akun Alight Motion Premium'],pengaturan:['Pengaturan','Profil dan keamanan akun']};
         const[t,s]=titles[page]||titles.dashboard;
         document.getElementById('pageTitle').textContent=t;
         document.getElementById('pageSubtitle').textContent=s;
         document.getElementById('headerActions').innerHTML='';
         document.getElementById('mainBody').innerHTML='<div class="page-content" id="pageContent"></div>';
-        const r={dashboard:()=>this.renderDashboard(),langganan:()=>this.renderLangganan(),gopay:()=>this.renderGopay(),orderkouta:()=>this.renderOrderkouta(),digiflazz:()=>this.renderDigiflazz(),wagateway:()=>this.renderWaGateway(),pengaturan:()=>this.renderPengaturan()};
+        const r={dashboard:()=>this.renderDashboard(),langganan:()=>this.renderLangganan(),gopay:()=>this.renderGopay(),orderkouta:()=>this.renderOrderkouta(),digiflazz:()=>this.renderDigiflazz(),wagateway:()=>this.renderWaGateway(),alightmotion:()=>this.renderAlightMotion(),pengaturan:()=>this.renderPengaturan()};
         (r[page]||r.dashboard)();
     },
 
@@ -729,7 +729,115 @@ const App={
     // MODAL
     showModal(t,c,fn){const o=document.getElementById('modalOverlay');document.getElementById('modalTitle').textContent=t;document.getElementById('modalBody').innerHTML=c;this._mc=fn;o.classList.add('active');},
     closeModal(){document.getElementById('modalOverlay').classList.remove('active');},
-    confirmModal(){if(this._mc)this._mc();}
+    confirmModal(){if(this._mc)this._mc();},
+
+    // ALIGHT MOTION
+    _amEmail: '',
+    renderAlightMotion(){
+        const el=document.getElementById('pageContent');
+        el.innerHTML=`<div style="max-width:600px">
+            <div class="settings-section">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+                    <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    </div>
+                    <div>
+                        <div style="font-weight:700;font-size:16px">Upgrade Alight Motion Premium</div>
+                        <div style="color:var(--text-muted);font-size:12px">Aktifkan akun premium Alight Motion selama 1 tahun</div>
+                    </div>
+                </div>
+                <div id="amStep1">
+                    <div class="form-group">
+                        <label class="form-label">Email Alight Motion</label>
+                        <input class="form-input" id="amEmail" type="email" placeholder="contoh@gmail.com">
+                        <div class="form-hint">Masukkan email yang terdaftar di Alight Motion</div>
+                    </div>
+                    <button class="btn btn-primary" id="amSendBtn" onclick="App.amSend()" style="width:100%">Kirim Verifikasi</button>
+                </div>
+                <div id="amStep2" style="display:none">
+                    <div style="background:var(--bg-tertiary);border-radius:10px;padding:16px;margin-bottom:16px;font-size:13px;line-height:1.7">
+                        <div style="font-weight:700;font-size:14px;margin-bottom:10px">Verifikasi Berhasil Dikirim!</div>
+                        <div>Ikuti instruksi berikut:</div>
+                        <ol style="padding-left:18px;margin:8px 0">
+                            <li>Buka aplikasi <strong>Gmail</strong> di ponsel Anda</li>
+                            <li>Cek <strong>Folder Spam</strong> (atau kotak masuk utama)</li>
+                            <li>Cari email dari: <code style="padding:2px 6px;background:var(--bg-primary);border-radius:4px;font-size:11px">noreply@alight-creative.firebaseapp.com</code></li>
+                            <li>Buka email tersebut, lalu <strong>tahan lama</strong> pada tombol <strong>Login ke Alight Creative</strong></li>
+                            <li>Pilih <strong>Salin URL</strong> atau <strong>Copy Link Address</strong></li>
+                            <li>Kembali ke sini dan paste link di bawah</li>
+                        </ol>
+                        <div style="color:var(--text-muted);font-size:11px;margin-top:8px">Email: <strong id="amEmailDisplay"></strong></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Link Verifikasi</label>
+                        <textarea class="form-input" id="amLink" rows="3" placeholder="Paste link dari email di sini..." style="font-size:12px;font-family:var(--font-mono);resize:vertical"></textarea>
+                    </div>
+                    <button class="btn btn-primary" id="amVerifBtn" onclick="App.amVerif()" style="width:100%">Verifikasi Akun</button>
+                    <button class="btn btn-secondary" onclick="App.amReset()" style="width:100%;margin-top:8px">Ganti Email</button>
+                </div>
+                <div id="amSuccess" style="display:none">
+                    <div style="text-align:center;padding:24px 0">
+                        <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#34d399,#059669);margin:0 auto 16px;display:flex;align-items:center;justify-content:center">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        <div style="font-weight:700;font-size:18px;margin-bottom:6px">Verifikasi Berhasil!</div>
+                        <div style="color:var(--text-muted);font-size:13px;margin-bottom:16px" id="amSuccessMsg"></div>
+                        <div style="background:var(--bg-tertiary);border-radius:10px;padding:16px;text-align:left;font-size:13px;line-height:1.7">
+                            <div style="font-weight:600;margin-bottom:8px">Langkah Selanjutnya:</div>
+                            <ol style="padding-left:18px;margin:0">
+                                <li>Buka aplikasi <strong>Alight Motion</strong></li>
+                                <li>Pilih opsi <strong>Masuk / Login</strong> menggunakan Email atau Akun Google</li>
+                                <li>Masukkan email yang baru saja diverifikasi</li>
+                                <li>Akun sekarang telah aktif <strong>Premium 1 Tahun</strong></li>
+                            </ol>
+                        </div>
+                        <button class="btn btn-secondary" onclick="App.amReset()" style="margin-top:16px">Upgrade Email Lain</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    },
+    async amSend(){
+        const email=document.getElementById('amEmail').value.trim();
+        if(!email)return Toast.error('Email wajib diisi!');
+        const btn=document.getElementById('amSendBtn');
+        btn.disabled=true;btn.textContent='Mengirim...';
+        const r=await UserAuth.apiFetch(`/api/user/alight-motion/send?email=${encodeURIComponent(email)}`);
+        btn.disabled=false;btn.textContent='Kirim Verifikasi';
+        if(r?.success){
+            this._amEmail=email;
+            document.getElementById('amStep1').style.display='none';
+            document.getElementById('amStep2').style.display='block';
+            document.getElementById('amEmailDisplay').textContent=email;
+            Toast.success(r.message);
+        }else{
+            Toast.error(r?.message||'Gagal mengirim verifikasi');
+        }
+    },
+    async amVerif(){
+        const link=document.getElementById('amLink').value.trim();
+        if(!link)return Toast.error('Link verifikasi wajib diisi!');
+        const btn=document.getElementById('amVerifBtn');
+        btn.disabled=true;btn.textContent='Memverifikasi...';
+        const r=await UserAuth.apiFetch(`/api/user/alight-motion/verif?email=${encodeURIComponent(this._amEmail)}&link=${encodeURIComponent(link)}`);
+        btn.disabled=false;btn.textContent='Verifikasi Akun';
+        if(r?.success){
+            document.getElementById('amStep2').style.display='none';
+            document.getElementById('amSuccess').style.display='block';
+            const dur=r.data?.duration==='1_year'?'1 Tahun':r.data?.duration||'Premium';
+            document.getElementById('amSuccessMsg').innerHTML=`Email <strong>${this._amEmail}</strong> telah berhasil diverifikasi.<br>Durasi keanggotaan: <strong>${dur}</strong>`;
+            Toast.success(r.message);
+        }else{
+            Toast.error(r?.message||'Verifikasi gagal');
+        }
+    },
+    amReset(){
+        this._amEmail='';
+        document.getElementById('amStep1').style.display='block';
+        document.getElementById('amStep2').style.display='none';
+        document.getElementById('amSuccess').style.display='none';
+        document.getElementById('amEmail').value='';
+    }
 };
 
 const Toast={

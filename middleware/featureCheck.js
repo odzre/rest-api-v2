@@ -10,7 +10,8 @@ const FEATURE_NAMES = {
     allow_gopay: 'GoPay Merchant',
     allow_orderkouta: 'OrderKuota',
     allow_digiflazz: 'Digiflazz Tools',
-    allow_wa_gateway: 'WA Gateway'
+    allow_wa_gateway: 'WA Gateway',
+    allow_alight_motion: 'Alight Motion'
 };
 
 const requireFeature = (featureColumn) => {

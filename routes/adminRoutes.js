@@ -57,5 +57,9 @@ router.put('/settings/pg-gopay', verifyAdmin, adminController.updatePgGopaySetti
 router.get('/settings/wa-notifications', verifyAdmin, adminController.getWaNotifSettings);
 router.put('/settings/wa-notifications', verifyAdmin, adminController.updateWaNotifSettings);
 router.post('/broadcast', verifyAdmin, adminController.sendBroadcast);
+// Alight Motion settings
+const amCtrl = require('../controllers/alightMotionController');
+router.get('/settings/alight-motion', verifyAdmin, amCtrl.getAmSettings);
+router.put('/settings/alight-motion', verifyAdmin, amCtrl.updateAmSettings);
 
 module.exports = router;

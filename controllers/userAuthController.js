@@ -162,13 +162,13 @@ const getProfile = async (req, res) => {
         const tokens = await db.getOne('SELECT * FROM user_tokens WHERE user_id = ?', [user.id]);
 
         // Get feature permissions from plan
-        let features = { allow_gopay: true, allow_orderkouta: true, allow_digiflazz: true, allow_wa_gateway: true };
+        let features = { allow_gopay: true, allow_orderkouta: true, allow_digiflazz: true, allow_wa_gateway: true, allow_alight_motion: true };
         if (user.subscription_plan_id && apiKeyActive) {
-            const plan = await db.getOne('SELECT allow_gopay, allow_orderkouta, allow_digiflazz, allow_wa_gateway FROM subscription_plans WHERE id = ?', [user.subscription_plan_id]);
-            if (plan) features = { allow_gopay: !!plan.allow_gopay, allow_orderkouta: !!plan.allow_orderkouta, allow_digiflazz: !!plan.allow_digiflazz, allow_wa_gateway: !!plan.allow_wa_gateway };
+            const plan = await db.getOne('SELECT allow_gopay, allow_orderkouta, allow_digiflazz, allow_wa_gateway, allow_alight_motion FROM subscription_plans WHERE id = ?', [user.subscription_plan_id]);
+            if (plan) features = { allow_gopay: !!plan.allow_gopay, allow_orderkouta: !!plan.allow_orderkouta, allow_digiflazz: !!plan.allow_digiflazz, allow_wa_gateway: !!plan.allow_wa_gateway, allow_alight_motion: !!plan.allow_alight_motion };
         } else if (!apiKeyActive) {
             // No active subscription = no restrictions (free tier, only credit watermark)
-            features = { allow_gopay: true, allow_orderkouta: true, allow_digiflazz: false, allow_wa_gateway: true };
+            features = { allow_gopay: true, allow_orderkouta: true, allow_digiflazz: false, allow_wa_gateway: true, allow_alight_motion: true };
         }
 
         return sendResponse(res, 200, true, 'Profil user.', {
@@ -517,14 +517,14 @@ const adminGetPlans = async (req, res) => {
 /** POST /api/admin/subscription-plans */
 const adminCreatePlan = async (req, res) => {
     try {
-        const { name, price, duration_days, description, benefits, rate_limit, allow_gopay, allow_orderkouta, allow_digiflazz, allow_wa_gateway, sort_order } = req.body;
+        const { name, price, duration_days, description, benefits, rate_limit, allow_gopay, allow_orderkouta, allow_digiflazz, allow_wa_gateway, allow_alight_motion, sort_order } = req.body;
         if (!name || !price || !duration_days) {
             return sendResponse(res, 400, false, 'name, price, dan duration_days wajib diisi.');
         }
 
         const result = await db.run(
-            'INSERT INTO subscription_plans (name, price, duration_days, description, benefits, rate_limit, allow_gopay, allow_orderkouta, allow_digiflazz, allow_wa_gateway, sort_order, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)',
-            [name, parseInt(price), parseInt(duration_days), description || '', JSON.stringify(benefits || []), parseInt(rate_limit) || 0, allow_gopay ? 1 : 0, allow_orderkouta ? 1 : 0, allow_digiflazz ? 1 : 0, allow_wa_gateway ? 1 : 0, parseInt(sort_order) || 0]
+            'INSERT INTO subscription_plans (name, price, duration_days, description, benefits, rate_limit, allow_gopay, allow_orderkouta, allow_digiflazz, allow_wa_gateway, allow_alight_motion, sort_order, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)',
+            [name, parseInt(price), parseInt(duration_days), description || '', JSON.stringify(benefits || []), parseInt(rate_limit) || 0, allow_gopay ? 1 : 0, allow_orderkouta ? 1 : 0, allow_digiflazz ? 1 : 0, allow_wa_gateway ? 1 : 0, allow_alight_motion ? 1 : 0, parseInt(sort_order) || 0]
         );
 
         const plan = await db.getOne('SELECT * FROM subscription_plans WHERE id = ?', [result.insertId]);
@@ -543,11 +543,11 @@ const adminUpdatePlan = async (req, res) => {
         const plan = await db.getOne('SELECT * FROM subscription_plans WHERE id = ?', [id]);
         if (!plan) return sendResponse(res, 404, false, 'Paket tidak ditemukan.');
 
-        const { name, price, duration_days, description, benefits, active, rate_limit, allow_gopay, allow_orderkouta, allow_digiflazz, allow_wa_gateway, sort_order } = req.body;
+        const { name, price, duration_days, description, benefits, active, rate_limit, allow_gopay, allow_orderkouta, allow_digiflazz, allow_wa_gateway, allow_alight_motion, sort_order } = req.body;
         const newRateLimit = rate_limit !== undefined ? parseInt(rate_limit) : (plan.rate_limit || 0);
 
         await db.run(
-            'UPDATE subscription_plans SET name = ?, price = ?, duration_days = ?, description = ?, benefits = ?, rate_limit = ?, allow_gopay = ?, allow_orderkouta = ?, allow_digiflazz = ?, allow_wa_gateway = ?, sort_order = ?, active = ? WHERE id = ?',
+            'UPDATE subscription_plans SET name = ?, price = ?, duration_days = ?, description = ?, benefits = ?, rate_limit = ?, allow_gopay = ?, allow_orderkouta = ?, allow_digiflazz = ?, allow_wa_gateway = ?, allow_alight_motion = ?, sort_order = ?, active = ? WHERE id = ?',
             [
                 name !== undefined ? name : plan.name,
                 price !== undefined ? parseInt(price) : plan.price,
@@ -559,6 +559,7 @@ const adminUpdatePlan = async (req, res) => {
                 allow_orderkouta !== undefined ? (allow_orderkouta ? 1 : 0) : (plan.allow_orderkouta ?? 1),
                 allow_digiflazz !== undefined ? (allow_digiflazz ? 1 : 0) : (plan.allow_digiflazz ?? 1),
                 allow_wa_gateway !== undefined ? (allow_wa_gateway ? 1 : 0) : (plan.allow_wa_gateway ?? 1),
+                allow_alight_motion !== undefined ? (allow_alight_motion ? 1 : 0) : (plan.allow_alight_motion ?? 1),
                 sort_order !== undefined ? parseInt(sort_order) : (plan.sort_order || 0),
                 active !== undefined ? (active ? 1 : 0) : plan.active,
                 id

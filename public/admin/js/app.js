@@ -49,13 +49,13 @@ const App = {
         this.currentPage = page;
         location.hash = page;
         document.querySelectorAll('.nav-item[data-page]').forEach(i => i.classList.toggle('active', i.dataset.page === page));
-        const titles = { dashboard: ['Dashboard','Overview sistem API kamu'], apikeys: ['API Keys','Kelola kunci akses API'], logs: ['Request Logs','Riwayat request API terbaru'], notification: ['Notifikasi','Konfigurasi notifikasi Telegram / WhatsApp'], langganan: ['Langganan','Kelola paket langganan'], users: ['Users','Kelola user terdaftar'], websettings: ['Web Settings','Pengaturan website & branding'], pggopay: ['PG GoPay Merchant','Konfigurasi payment gateway QRIS'], wanotif: ['WA Notifikasi','Notifikasi WhatsApp & Broadcast'] };
+        const titles = { dashboard: ['Dashboard','Overview sistem API kamu'], apikeys: ['API Keys','Kelola kunci akses API'], logs: ['Request Logs','Riwayat request API terbaru'], notification: ['Notifikasi','Konfigurasi notifikasi Telegram / WhatsApp'], langganan: ['Langganan','Kelola paket langganan'], users: ['Users','Kelola user terdaftar'], websettings: ['Web Settings','Pengaturan website & branding'], pggopay: ['PG GoPay Merchant','Konfigurasi payment gateway QRIS'], wanotif: ['WA Notifikasi','Notifikasi WhatsApp & Broadcast'], alightmotion: ['Alight Motion','Konfigurasi API Alight Motion Premium'] };
         const [t, s] = titles[page] || titles.dashboard;
         document.getElementById('pageTitle').textContent = t;
         document.getElementById('pageSubtitle').textContent = s;
         document.getElementById('headerActions').innerHTML = '';
         document.getElementById('mainBody').innerHTML = '<div class="page-content" id="pageContent"></div>';
-        const r = { dashboard: () => this.renderDashboard(), apikeys: () => this.renderApiKeys(), logs: () => this.renderLogs(), notification: () => this.renderNotification(), langganan: () => this.renderLangganan(), users: () => this.renderUsersPage(), websettings: () => this.renderWebSettings(), pggopay: () => this.renderPgGopay(), wanotif: () => this.renderWaNotif() };
+        const r = { dashboard: () => this.renderDashboard(), apikeys: () => this.renderApiKeys(), logs: () => this.renderLogs(), notification: () => this.renderNotification(), langganan: () => this.renderLangganan(), users: () => this.renderUsersPage(), websettings: () => this.renderWebSettings(), pggopay: () => this.renderPgGopay(), wanotif: () => this.renderWaNotif(), alightmotion: () => this.renderAlightMotion() };
         (r[page] || r.dashboard)();
     },
 
@@ -413,7 +413,7 @@ const App = {
             <td>Rp ${p.price.toLocaleString('id-ID')}</td>
             <td>${p.duration_days} hari</td>
             <td>${(p.rate_limit||0) > 0 ? `${p.rate_limit}/hari` : '<span class="badge badge-green">Unlimited</span>'}</td>
-            <td style="font-size:12px;line-height:1.8">${p.allow_gopay!==undefined?[p.allow_gopay?'<span class="badge badge-green">GoPay</span>':'',p.allow_orderkouta?'<span class="badge badge-green">OrderKuota</span>':'',p.allow_digiflazz?'<span class="badge badge-green">Digiflazz</span>':'',p.allow_wa_gateway?'<span class="badge badge-green">WA Gateway</span>':''].filter(Boolean).join(' ')||'<span class="badge badge-red">Tidak ada</span>':'<span class="badge badge-green">Semua</span>'}</td>
+            <td style="font-size:12px;line-height:1.8">${p.allow_gopay!==undefined?[p.allow_gopay?'<span class="badge badge-green">GoPay</span>':'',p.allow_orderkouta?'<span class="badge badge-green">OrderKuota</span>':'',p.allow_digiflazz?'<span class="badge badge-green">Digiflazz</span>':'',p.allow_wa_gateway?'<span class="badge badge-green">WA Gateway</span>':'',p.allow_alight_motion?'<span class="badge badge-green">Alight Motion</span>':''].filter(Boolean).join(' ')||'<span class="badge badge-red">Tidak ada</span>':'<span class="badge badge-green">Semua</span>'}</td>
             <td><span class="badge ${p.active?'badge-green':'badge-red'}">${p.active?'Aktif':'Nonaktif'}</span></td>
             <td><button class="btn btn-secondary btn-sm" onclick="App.showEditPlanModal(${p.id})">${IC.edit}</button> <button class="btn btn-danger btn-sm" onclick="App.deletePlan(${p.id},'${p.name.replace(/'/g,"\\\'")}')">${IC.trash}</button></td>
         </tr>`).join('')}</tbody></table></div></div>`;
@@ -426,7 +426,7 @@ const App = {
             <div class="form-group"><label class="form-label">Durasi (Hari)</label><input class="form-input" id="planDays" type="number" placeholder="30"></div></div>
             <div class="form-row"><div class="form-group"><label class="form-label">Rate Limit / Hari</label><input class="form-input" id="planRateLimit" type="number" min="0" value="0" placeholder="0"><div class="form-hint">0 = unlimited</div></div>
             <div class="form-group"><label class="form-label">Urutan Tampil</label><input class="form-input" id="planSortOrder" type="number" min="0" value="0" placeholder="0"><div class="form-hint">Angka kecil tampil duluan</div></div></div>
-            <div class="form-group"><label class="form-label">Fitur Akses</label><div class="feature-checks"><label class="checkbox-label"><input type="checkbox" id="planGopay" checked> GoPay Merchant</label><label class="checkbox-label"><input type="checkbox" id="planOrderkouta" checked> OrderKuota</label><label class="checkbox-label"><input type="checkbox" id="planDigiflazz" checked> Digiflazz Tools</label><label class="checkbox-label"><input type="checkbox" id="planWaGateway" checked> WA Gateway</label></div></div>
+            <div class="form-group"><label class="form-label">Fitur Akses</label><div class="feature-checks"><label class="checkbox-label"><input type="checkbox" id="planGopay" checked> GoPay Merchant</label><label class="checkbox-label"><input type="checkbox" id="planOrderkouta" checked> OrderKuota</label><label class="checkbox-label"><input type="checkbox" id="planDigiflazz" checked> Digiflazz Tools</label><label class="checkbox-label"><input type="checkbox" id="planWaGateway" checked> WA Gateway</label><label class="checkbox-label"><input type="checkbox" id="planAlightMotion" checked> Alight Motion</label></div></div>
             <div class="form-group"><label class="form-label">Deskripsi</label><input class="form-input" id="planDesc" placeholder="Deskripsi paket"></div>
             <div class="form-group"><label class="form-label">Benefits (pisah koma)</label><input class="form-input" id="planBenefits" placeholder="1000 req/hari, Auto-polling, Webhook"></div>`, async () => {
             const name=document.getElementById('planName').value.trim();const price=document.getElementById('planPrice').value;const duration_days=document.getElementById('planDays').value;
@@ -438,7 +438,8 @@ const App = {
             const allow_orderkouta=document.getElementById('planOrderkouta').checked;
             const allow_digiflazz=document.getElementById('planDigiflazz').checked;
             const allow_wa_gateway=document.getElementById('planWaGateway').checked;
-            const r=await Auth.apiFetch('/api/admin/subscription-plans',{method:'POST',body:JSON.stringify({name,price,duration_days,description:document.getElementById('planDesc').value.trim(),benefits,rate_limit,sort_order,allow_gopay,allow_orderkouta,allow_digiflazz,allow_wa_gateway})});
+            const allow_alight_motion=document.getElementById('planAlightMotion').checked;
+            const r=await Auth.apiFetch('/api/admin/subscription-plans',{method:'POST',body:JSON.stringify({name,price,duration_days,description:document.getElementById('planDesc').value.trim(),benefits,rate_limit,sort_order,allow_gopay,allow_orderkouta,allow_digiflazz,allow_wa_gateway,allow_alight_motion})});
             if(r?.success){Toast.success('Paket berhasil dibuat!');this.closeModal();this.renderLangganan();}else Toast.error(r?.message||'Gagal');
         });
     },
@@ -450,7 +451,7 @@ const App = {
             <div class="form-group"><label class="form-label">Durasi (Hari)</label><input class="form-input" id="planDays" type="number" value="${p.duration_days}"></div></div>
             <div class="form-row"><div class="form-group"><label class="form-label">Rate Limit / Hari</label><input class="form-input" id="planRateLimit" type="number" min="0" value="${p.rate_limit||0}"><div class="form-hint">0 = unlimited</div></div>
             <div class="form-group"><label class="form-label">Urutan Tampil</label><input class="form-input" id="planSortOrder" type="number" min="0" value="${p.sort_order||0}"><div class="form-hint">Angka kecil tampil duluan</div></div></div>
-            <div class="form-group"><label class="form-label">Fitur Akses</label><div class="feature-checks"><label class="checkbox-label"><input type="checkbox" id="planGopay" ${p.allow_gopay!==0?'checked':''}> GoPay Merchant</label><label class="checkbox-label"><input type="checkbox" id="planOrderkouta" ${p.allow_orderkouta!==0?'checked':''}> OrderKuota</label><label class="checkbox-label"><input type="checkbox" id="planDigiflazz" ${p.allow_digiflazz!==0?'checked':''}> Digiflazz Tools</label><label class="checkbox-label"><input type="checkbox" id="planWaGateway" ${p.allow_wa_gateway!==0?'checked':''}> WA Gateway</label></div></div>
+            <div class="form-group"><label class="form-label">Fitur Akses</label><div class="feature-checks"><label class="checkbox-label"><input type="checkbox" id="planGopay" ${p.allow_gopay!==0?'checked':''}> GoPay Merchant</label><label class="checkbox-label"><input type="checkbox" id="planOrderkouta" ${p.allow_orderkouta!==0?'checked':''}> OrderKuota</label><label class="checkbox-label"><input type="checkbox" id="planDigiflazz" ${p.allow_digiflazz!==0?'checked':''}> Digiflazz Tools</label><label class="checkbox-label"><input type="checkbox" id="planWaGateway" ${p.allow_wa_gateway!==0?'checked':''}> WA Gateway</label><label class="checkbox-label"><input type="checkbox" id="planAlightMotion" ${p.allow_alight_motion!==0?'checked':''}> Alight Motion</label></div></div>
             <div class="form-group"><label class="form-label">Deskripsi</label><input class="form-input" id="planDesc" value="${p.description||''}"></div>
             <div class="form-group"><label class="form-label">Benefits</label><input class="form-input" id="planBenefits" value="${(p.benefits||[]).join(', ')}"></div>`, async () => {
             const rate_limit=parseInt(document.getElementById('planRateLimit').value)||0;
@@ -459,7 +460,8 @@ const App = {
             const allow_orderkouta=document.getElementById('planOrderkouta').checked;
             const allow_digiflazz=document.getElementById('planDigiflazz').checked;
             const allow_wa_gateway=document.getElementById('planWaGateway').checked;
-            const r=await Auth.apiFetch(`/api/admin/subscription-plans/${id}`,{method:'PUT',body:JSON.stringify({name:document.getElementById('planName').value.trim(),price:document.getElementById('planPrice').value,duration_days:document.getElementById('planDays').value,description:document.getElementById('planDesc').value.trim(),benefits:document.getElementById('planBenefits').value.split(',').map(b=>b.trim()).filter(Boolean),rate_limit,sort_order,allow_gopay,allow_orderkouta,allow_digiflazz,allow_wa_gateway})});
+            const allow_alight_motion=document.getElementById('planAlightMotion').checked;
+            const r=await Auth.apiFetch(`/api/admin/subscription-plans/${id}`,{method:'PUT',body:JSON.stringify({name:document.getElementById('planName').value.trim(),price:document.getElementById('planPrice').value,duration_days:document.getElementById('planDays').value,description:document.getElementById('planDesc').value.trim(),benefits:document.getElementById('planBenefits').value.split(',').map(b=>b.trim()).filter(Boolean),rate_limit,sort_order,allow_gopay,allow_orderkouta,allow_digiflazz,allow_wa_gateway,allow_alight_motion})});
             if(r?.success){Toast.success(r.message);this.closeModal();this.renderLangganan();}else Toast.error(r?.message||'Gagal');
         });
     },
@@ -689,6 +691,27 @@ const App = {
             document.getElementById('bcResult').innerHTML = '';
             Toast.error(r?.message || 'Gagal broadcast');
         }
+    },
+
+    // ALIGHT MOTION SETTINGS
+    async renderAlightMotion() {
+        const el = document.getElementById('pageContent');
+        el.innerHTML = '<div class="skeleton" style="height:200px"></div>';
+        const res = await Auth.apiFetch('/api/admin/settings/alight-motion');
+        const d = res?.data || { api_key: '' };
+        el.innerHTML = `<div style="max-width:600px">
+            <div class="settings-section">
+                <div class="section-title">${IC.key} API Key Alight Motion</div>
+                <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">API Key untuk mengakses layanan Alight Motion Premium (kyuu2nd.dev).</p>
+                <div class="form-group"><label class="form-label">API Key</label><input class="form-input" id="amApiKey" value="${d.api_key||''}" placeholder="Masukkan API Key"></div>
+                <button class="btn btn-primary" onclick="App.saveAmSettings()" style="margin-top:8px">${IC.check} Simpan</button>
+            </div>
+        </div>`;
+    },
+    async saveAmSettings() {
+        const api_key = document.getElementById('amApiKey').value.trim();
+        const r = await Auth.apiFetch('/api/admin/settings/alight-motion', { method: 'PUT', body: JSON.stringify({ api_key }) });
+        if (r?.success) Toast.success(r.message); else Toast.error(r?.message || 'Gagal menyimpan');
     },
 };
 
