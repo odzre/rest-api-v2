@@ -138,7 +138,8 @@ async function init() {
         try { await conn.query('ALTER TABLE subscription_plans ADD COLUMN allow_orderkouta TINYINT(1) DEFAULT 1 AFTER allow_gopay'); } catch(e) {}
         try { await conn.query('ALTER TABLE subscription_plans ADD COLUMN allow_digiflazz TINYINT(1) DEFAULT 1 AFTER allow_orderkouta'); } catch(e) {}
         try { await conn.query('ALTER TABLE subscription_plans ADD COLUMN allow_wa_gateway TINYINT(1) DEFAULT 1 AFTER allow_digiflazz'); } catch(e) {}
-        try { await conn.query('ALTER TABLE subscription_plans ADD COLUMN sort_order INT DEFAULT 0 AFTER allow_wa_gateway'); } catch(e) {}
+        try { await conn.query('ALTER TABLE subscription_plans ADD COLUMN allow_alight_motion TINYINT(1) DEFAULT 1 AFTER allow_wa_gateway'); } catch(e) {}
+        try { await conn.query('ALTER TABLE subscription_plans ADD COLUMN sort_order INT DEFAULT 0 AFTER allow_alight_motion'); } catch(e) {}
 
         await conn.query(`
             CREATE TABLE IF NOT EXISTS settings (
