@@ -45,6 +45,40 @@ app.use('/image', express.static(path.join(__dirname, 'public', 'image')));
 const { getSiteConfig } = require('./config/siteConfig');
 app.get('/api/site-config', (req, res) => res.json(getSiteConfig()));
 
+// Public endpoints (no auth required)
+app.get('/api/public/live-stats', async (req, res) => {
+    try {
+        const today = await db.getOne(
+            "SELECT COUNT(*) as tx_count FROM request_logs WHERE DATE(timestamp) = CURDATE()"
+        );
+        const total = await db.getOne(
+            "SELECT COUNT(*) as total_count FROM request_logs"
+        );
+        res.json({
+            success: true,
+            data: {
+                transactions_today: today?.tx_count || 0,
+                volume_today: total?.total_count || 0
+            }
+        });
+    } catch (err) {
+        console.error('[LiveStats] Error:', err.message);
+        res.json({ success: true, data: { transactions_today: 0, volume_today: 0 } });
+    }
+});
+
+app.get('/api/public/footer-settings', async (req, res) => {
+    try {
+        const row = await db.getOne("SELECT `value` FROM settings WHERE `key` = ?", ['landing_footer']);
+        if (!row) return res.json({ success: true, data: null });
+        const data = typeof row.value === 'string' ? JSON.parse(row.value) : row.value;
+        res.json({ success: true, data });
+    } catch (err) {
+        console.error('[FooterSettings] Error:', err.message);
+        res.json({ success: true, data: null });
+    }
+});
+
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/keys', apiKeyRoutes);
 app.use('/api/user', userAuthRoutes);

@@ -49,13 +49,13 @@ const App = {
         this.currentPage = page;
         location.hash = page;
         document.querySelectorAll('.nav-item[data-page]').forEach(i => i.classList.toggle('active', i.dataset.page === page));
-        const titles = { dashboard: ['Dashboard','Overview sistem API kamu'], apikeys: ['API Keys','Kelola kunci akses API'], logs: ['Request Logs','Riwayat request API terbaru'], notification: ['Notifikasi','Konfigurasi notifikasi Telegram / WhatsApp'], langganan: ['Langganan','Kelola paket langganan'], users: ['Users','Kelola user terdaftar'], websettings: ['Web Settings','Pengaturan website & branding'], pggopay: ['PG GoPay Merchant','Konfigurasi payment gateway QRIS'], wanotif: ['WA Notifikasi','Notifikasi WhatsApp & Broadcast'], alightmotion: ['Alight Motion','Konfigurasi API Alight Motion Premium'] };
+        const titles = { dashboard: ['Dashboard','Overview sistem API kamu'], apikeys: ['API Keys','Kelola kunci akses API'], logs: ['Request Logs','Riwayat request API terbaru'], notification: ['Notifikasi','Konfigurasi notifikasi Telegram / WhatsApp'], langganan: ['Langganan','Kelola paket langganan'], users: ['Users','Kelola user terdaftar'], websettings: ['Web Settings','Pengaturan website & branding'], pggopay: ['PG GoPay Merchant','Konfigurasi payment gateway QRIS'], wanotif: ['WA Notifikasi','Notifikasi WhatsApp & Broadcast'], alightmotion: ['Alight Motion','Konfigurasi API Alight Motion Premium'], landingfooter: ['Landing Footer','Kelola konten footer landing page'] };
         const [t, s] = titles[page] || titles.dashboard;
         document.getElementById('pageTitle').textContent = t;
         document.getElementById('pageSubtitle').textContent = s;
         document.getElementById('headerActions').innerHTML = '';
         document.getElementById('mainBody').innerHTML = '<div class="page-content" id="pageContent"></div>';
-        const r = { dashboard: () => this.renderDashboard(), apikeys: () => this.renderApiKeys(), logs: () => this.renderLogs(), notification: () => this.renderNotification(), langganan: () => this.renderLangganan(), users: () => this.renderUsersPage(), websettings: () => this.renderWebSettings(), pggopay: () => this.renderPgGopay(), wanotif: () => this.renderWaNotif(), alightmotion: () => this.renderAlightMotion() };
+        const r = { dashboard: () => this.renderDashboard(), apikeys: () => this.renderApiKeys(), logs: () => this.renderLogs(), notification: () => this.renderNotification(), langganan: () => this.renderLangganan(), users: () => this.renderUsersPage(), websettings: () => this.renderWebSettings(), pggopay: () => this.renderPgGopay(), wanotif: () => this.renderWaNotif(), alightmotion: () => this.renderAlightMotion(), landingfooter: () => this.renderLandingFooter() };
         (r[page] || r.dashboard)();
     },
 
@@ -711,6 +711,59 @@ const App = {
     async saveAmSettings() {
         const api_key = document.getElementById('amApiKey').value.trim();
         const r = await Auth.apiFetch('/api/admin/settings/alight-motion', { method: 'PUT', body: JSON.stringify({ api_key }) });
+        if (r?.success) Toast.success(r.message); else Toast.error(r?.message || 'Gagal menyimpan');
+    },
+
+    // LANDING FOOTER SETTINGS
+    async renderLandingFooter() {
+        const el = document.getElementById('pageContent');
+        el.innerHTML = '<div class="skeleton" style="height:400px"></div>';
+        const res = await Auth.apiFetch('/api/admin/settings/landing-footer');
+        const d = res?.data || {};
+        el.innerHTML = `
+        <div class="page-content">
+            <div class="settings-section">
+                <h3 class="section-title-sm">Brand & Alamat</h3>
+                <div class="form-group"><label class="form-label">Nama Brand</label><input class="form-input" id="ftBrandName" value="${d.brand_name||'Odzreshop'}" placeholder="Nama brand"></div>
+                <div class="form-group"><label class="form-label">Alamat Lengkap</label><textarea class="form-input" id="ftAddress" rows="3" placeholder="Alamat perusahaan">${d.address||''}</textarea></div>
+                <div class="form-group"><label class="form-label">Copyright Text</label><input class="form-input" id="ftCopyright" value="${(d.copyright||'').replace(/"/g,'&quot;')}" placeholder="contoh: &copy; 2026 Odzreshop. PT Solusi Pembayaran Bersama"></div>
+            </div>
+            <div class="settings-section">
+                <h3 class="section-title-sm">Kontak</h3>
+                <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="ftEmail" value="${d.email||''}" placeholder="cs@domain.com"></div>
+                <div class="form-group"><label class="form-label">WhatsApp (dengan kode negara)</label><input class="form-input" id="ftWhatsapp" value="${d.whatsapp||''}" placeholder="+6282180007094"></div>
+            </div>
+            <div class="settings-section">
+                <h3 class="section-title-sm">Social Media</h3>
+                <div class="form-group"><label class="form-label">Facebook URL</label><input class="form-input" id="ftFacebook" value="${d.facebook_url||''}" placeholder="https://facebook.com/..."></div>
+                <div class="form-group"><label class="form-label">Instagram URL</label><input class="form-input" id="ftInstagram" value="${d.instagram_url||''}" placeholder="https://instagram.com/..."></div>
+            </div>
+            <div class="settings-section">
+                <h3 class="section-title-sm">WhatsApp Channel/Group</h3>
+                <div class="form-group"><label class="form-label">Link WA Channel/Group</label><input class="form-input" id="ftWaChannel" value="${d.wa_channel_url||''}" placeholder="https://chat.whatsapp.com/..."></div>
+                <div class="form-group"><label class="form-label">Teks Ajakan Channel</label><input class="form-input" id="ftWaChannelText" value="${(d.wa_channel_text||'').replace(/"/g,'&quot;')}" placeholder="Gabung channel kami untuk info terbaru"></div>
+            </div>
+            <div class="settings-section">
+                <h3 class="section-title-sm">Disclaimer</h3>
+                <div class="form-group"><label class="form-label">Teks Disclaimer (kolom 4 footer)</label><textarea class="form-input" id="ftDisclaimer" rows="5" placeholder="Teks disclaimer perusahaan...">${d.disclaimer||''}</textarea></div>
+            </div>
+            <button class="btn btn-primary" onclick="App.saveLandingFooter()">Simpan Footer Settings</button>
+        </div>`;
+    },
+    async saveLandingFooter() {
+        const data = {
+            brand_name: document.getElementById('ftBrandName').value.trim(),
+            address: document.getElementById('ftAddress').value.trim(),
+            copyright: document.getElementById('ftCopyright').value.trim(),
+            email: document.getElementById('ftEmail').value.trim(),
+            whatsapp: document.getElementById('ftWhatsapp').value.trim(),
+            facebook_url: document.getElementById('ftFacebook').value.trim(),
+            instagram_url: document.getElementById('ftInstagram').value.trim(),
+            wa_channel_url: document.getElementById('ftWaChannel').value.trim(),
+            wa_channel_text: document.getElementById('ftWaChannelText').value.trim(),
+            disclaimer: document.getElementById('ftDisclaimer').value.trim(),
+        };
+        const r = await Auth.apiFetch('/api/admin/settings/landing-footer', { method: 'PUT', body: JSON.stringify(data) });
         if (r?.success) Toast.success(r.message); else Toast.error(r?.message || 'Gagal menyimpan');
     },
 };

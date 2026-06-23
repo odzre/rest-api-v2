@@ -62,4 +62,28 @@ const amCtrl = require('../controllers/alightMotionController');
 router.get('/settings/alight-motion', verifyAdmin, amCtrl.getAmSettings);
 router.put('/settings/alight-motion', verifyAdmin, amCtrl.updateAmSettings);
 
+// Landing Page Footer settings
+const db = require('../config/database');
+router.get('/settings/landing-footer', verifyAdmin, async (req, res) => {
+    try {
+        const row = await db.getOne("SELECT `value` FROM settings WHERE `key` = ?", ['landing_footer']);
+        const data = row ? (typeof row.value === 'string' ? JSON.parse(row.value) : row.value) : {};
+        res.json({ success: true, data });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Gagal memuat: ' + err.message });
+    }
+});
+router.put('/settings/landing-footer', verifyAdmin, async (req, res) => {
+    try {
+        const jsonStr = JSON.stringify(req.body);
+        await db.run(
+            "INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
+            ['landing_footer', jsonStr]
+        );
+        res.json({ success: true, message: 'Footer settings berhasil disimpan.', data: req.body });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Gagal menyimpan: ' + err.message });
+    }
+});
+
 module.exports = router;

@@ -5,168 +5,738 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Odzreshop API — REST API Platform</title>
     <meta name="description" content="Platform REST API dengan GoPay Merchant, OrderKuota, Payment QRIS, dan Cek ID Game.">
-    <link rel="stylesheet" href="/user/css/dashboard.css?v=4">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- RESET & VARIABLES --- */
+        :root {
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.5);
+            --secondary: #ec4899;
+            --secondary-glow: rgba(236, 72, 153, 0.5);
+            --bg-dark: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.6);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-highlight: rgba(255, 255, 255, 0.15);
+            --success: #10b981;
+        }
+
+        * {
+            margin: 0; padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* --- ANIMATED BACKGROUND --- */
+        .bg-animation {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -1;
+            background: radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.12), transparent 30%),
+                        radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.12), transparent 30%),
+                        radial-gradient(circle at 50% 80%, rgba(16, 185, 129, 0.08), transparent 40%);
+            animation: bgShift 20s ease-in-out infinite alternate;
+        }
+
+        @keyframes bgShift {
+            0% { transform: scale(1) translate(0, 0); }
+            100% { transform: scale(1.1) translate(-2%, -2%); }
+        }
+
+        /* --- UTILITIES & BUTTONS --- */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 0.6rem 1.5rem; border-radius: 8px;
+            font-weight: 600; text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer; border: none;
+        }
+        .btn-sm { padding: 0.5rem 1.2rem; font-size: 0.9rem; }
+        .btn-lg { padding: 0.8rem 2.5rem; font-size: 1.1rem; border-radius: 10px; }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white; box-shadow: 0 4px 15px var(--primary-glow);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px); box-shadow: 0 8px 25px var(--primary-glow);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05); color: white;
+            border: 1px solid var(--border-color); backdrop-filter: blur(10px);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1); transform: translateY(-2px);
+            border-color: var(--border-highlight);
+        }
+
+        /* --- NAVBAR --- */
+        .landing-nav {
+            position: fixed; top: 0; width: 100%;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 5%; background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1000;
+        }
+        .sidebar-logo {
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none; color: white; font-size: 1.4rem; font-weight: 700;
+        }
+        .logo-icon { color: var(--primary); }
+        
+        .nav-menu { display: flex; gap: 2rem; align-items: center; }
+        .nav-menu a {
+            color: var(--text-main); text-decoration: none; font-weight: 500;
+            font-size: 0.95rem; transition: color 0.3s ease;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .nav-menu a:hover { color: var(--secondary); }
+        
+        .landing-nav-actions { display: flex; gap: 1rem; align-items: center; }
+        .landing-burger { display: none; background: none; border: none; color: white; cursor: pointer; }
+
+        /* --- HERO SECTION --- */
+        .hero {
+            min-height: 100vh; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; text-align: center;
+            padding: 8rem 5% 5rem; position: relative;
+        }
+        .hero h1 {
+            font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight: 800;
+            line-height: 1.2; margin-bottom: 1.5rem; animation: fadeUp 1s ease-out;
+            letter-spacing: -1px;
+        }
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--primary), #a855f7, var(--secondary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            display: inline-block; animation: float 4s ease-in-out infinite;
+        }
+        
+        /* TYPEWRITER CSS */
+        .typewriter-wrapper {
+            font-size: 1.15rem; color: var(--text-muted); max-width: 700px;
+            margin-bottom: 2.5rem; min-height: 60px;
+            animation: fadeUp 1s ease-out 0.2s backwards;
+        }
+        .cursor {
+            display: inline-block; width: 2px; height: 1.2em; 
+            background-color: var(--secondary); vertical-align: text-bottom;
+            animation: blink 0.8s step-end infinite; margin-left: 2px;
+        }
+
+        .hero-actions {
+            display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center;
+            animation: fadeUp 1s ease-out 0.4s backwards;
+        }
+
+        /* --- MODERN LIVE STATS SECTION --- */
+        .live-stats-container {
+            margin-top: 4rem;
+            display: flex; gap: 1.5rem; justify-content: center;
+            animation: fadeUp 1s ease-out 0.6s backwards;
+            flex-wrap: wrap;
+            width: 100%; max-width: 900px;
+        }
+        
+        .stat-card {
+            flex: 1; min-width: 280px;
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+            border: 1px solid var(--border-color);
+            border-top: 1px solid rgba(255, 255, 255, 0.15); 
+            border-radius: 16px;
+            padding: 1.5rem;
+            position: relative;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(99, 102, 241, 0.4);
+        }
+
+        .stat-card::before {
+            content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            opacity: 0.5;
+        }
+
+        .stat-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-title {
+            font-size: 0.9rem; color: var(--text-muted); font-weight: 500;
+            display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        
+        .live-badge {
+            background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--success); padding: 0.2rem 0.6rem; border-radius: 50px;
+            font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 6px;
+        }
+
+        .live-dot {
+            width: 6px; height: 6px; background-color: var(--success); border-radius: 50%;
+            animation: pulse-green 1.5s infinite;
+        }
+
+        .stat-body {
+            display: flex; align-items: flex-end; justify-content: flex-start; gap: 10px;
+        }
+
+        .stat-value {
+            font-size: clamp(1.8rem, 4vw, 2.6rem);
+            font-weight: 700; line-height: 1;
+            font-family: 'Courier New', Courier, monospace; 
+            color: white;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+            transition: all 0.2s;
+        }
+
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        @keyframes number-bump {
+            0% { transform: scale(1); color: white; }
+            50% { transform: scale(1.02); color: #cbd5e1; }
+            100% { transform: scale(1); color: white; }
+        }
+
+        /* --- FEATURES SECTION --- */
+        .section-container { padding: 6rem 5%; max-width: 1200px; margin: 0 auto; }
+        .section-title { text-align: center; font-size: 2.5rem; margin-bottom: 0.5rem; font-weight: 700; }
+        .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 4rem; font-size: 1.1rem; }
+        
+        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
+        
+        .feature-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.5));
+            border: 1px solid var(--border-color);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 2.5rem 2rem; 
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; overflow: hidden;
+            opacity: 0; transform: translateY(30px); 
+            display: flex; flex-direction: column;
+        }
+        .feature-card.visible { opacity: 1; transform: translateY(0); }
+        
+        .feature-card::before {
+            content: ''; position: absolute; top: -50px; right: -50px;
+            width: 150px; height: 150px; border-radius: 50%;
+            background: radial-gradient(circle, var(--primary-glow), transparent 70%);
+            opacity: 0; transition: opacity 0.4s ease; z-index: 0;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 20px rgba(99, 102, 241, 0.1);
+        }
+        .feature-card:hover::before { opacity: 0.6; }
+        
+        .feature-icon {
+            width: 56px; height: 56px; border-radius: 14px; display: flex;
+            align-items: center; justify-content: center; margin-bottom: 1.5rem; color: white;
+            position: relative; z-index: 1;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.2), 0 8px 16px rgba(0,0,0,0.2);
+        }
+        .green { background: linear-gradient(135deg, #10b981, #047857); }
+        .blue { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .purple { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+        .yellow { background: linear-gradient(135deg, #f59e0b, #b45309); }
+        
+        .feature-card h3 { font-size: 1.4rem; margin-bottom: 1rem; position: relative; z-index: 1; font-weight: 600;}
+        .feature-card p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.7; position: relative; z-index: 1; flex-grow: 1; }
+
+        .feature-arrow {
+            margin-top: 1.5rem; color: var(--primary); font-size: 0.9rem; font-weight: 600;
+            display: flex; align-items: center; gap: 5px; opacity: 0; transform: translateX(-10px);
+            transition: all 0.3s ease; position: relative; z-index: 1;
+        }
+        .feature-card:hover .feature-arrow {
+            opacity: 1; transform: translateX(0);
+        }
+
+        /* --- FAQ SECTION --- */
+        .faq-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem; align-items: start;
+        }
+        details.faq-item {
+            background: rgba(30, 41, 59, 0.4); border: 1px solid var(--border-color);
+            border-radius: 14px; padding: 1.5rem; backdrop-filter: blur(10px);
+            transition: all 0.3s ease; opacity: 0; transform: translateY(30px);
+        }
+        details.faq-item.visible { opacity: 1; transform: translateY(0); }
+        details.faq-item:hover { border-color: rgba(255, 255, 255, 0.2); background: rgba(30, 41, 59, 0.6); }
+        details.faq-item[open] { border-color: var(--primary); }
+        
+        summary.faq-question {
+            font-size: 1.1rem; font-weight: 600; cursor: pointer; list-style: none;
+            display: flex; justify-content: space-between; align-items: center;
+            color: var(--text-main);
+        }
+        summary.faq-question::-webkit-details-marker { display: none; } 
+        summary.faq-question::after {
+            content: '+'; font-size: 1.4rem; font-weight: 400; color: var(--text-muted);
+            transition: transform 0.3s ease;
+        }
+        details.faq-item[open] summary.faq-question::after { content: '\2212'; color: var(--secondary); transform: rotate(180deg); }
+        
+        .faq-answer {
+            padding-top: 1rem; color: var(--text-muted); font-size: 0.95rem; line-height: 1.8;
+            border-top: 1px solid var(--border-color); margin-top: 1.2rem;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        /* --- DETAILED FOOTER --- */
+        .footer-detailed {
+            background: rgba(15, 23, 42, 0.8);
+            border-top: 1px solid var(--border-color);
+            padding: 5rem 5% 2rem;
+            margin-top: 4rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            backdrop-filter: blur(10px);
+        }
+        .footer-container {
+            max-width: 1200px; margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1.2fr 1.5fr;
+            gap: 3rem;
+        }
+        .footer-logo-wrap {
+            display: flex; align-items: center; gap: 10px;
+            color: white; font-size: 1.5rem; font-weight: 700;
+            text-decoration: none; margin-bottom: 1.2rem;
+        }
+        .footer-col p { margin-bottom: 0.8rem; line-height: 1.6; }
+        .footer-col h4 {
+            color: white; font-size: 1.1rem; margin-bottom: 1.5rem; font-weight: 600;
+        }
+        .footer-col ul { list-style: none; }
+        .footer-col ul li { margin-bottom: 1rem; }
+        .footer-col a.text-link, .footer-col ul li a {
+            color: var(--text-muted); text-decoration: none; transition: color 0.3s;
+        }
+        .footer-col a.text-link:hover, .footer-col ul li a:hover {
+            color: white; padding-left: 5px; 
+        }
+        .social-links {
+            display: flex; gap: 1rem; margin-top: 1.5rem;
+        }
+        .social-links a {
+            display: flex; align-items: center; justify-content: center;
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(255,255,255,0.05); color: var(--text-main);
+            transition: all 0.3s;
+        }
+        .social-links a:hover {
+            background: var(--primary); transform: translateY(-3px);
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+        
+        .btn-wa-group {
+            display: inline-flex; align-items: center; gap: 8px;
+            border: 1px solid #10b981; color: #10b981;
+            padding: 0.6rem 1.2rem; border-radius: 8px;
+            text-decoration: none; font-weight: 500;
+            margin-top: 0.5rem; transition: all 0.3s; background: rgba(16, 185, 129, 0.05);
+        }
+        .btn-wa-group:hover {
+            background: #10b981; color: white; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+        
+        .footer-disclaimer {
+            font-size: 0.85rem; line-height: 1.7; text-align: justify; opacity: 0.8;
+        }
+
+        /* --- KEYFRAMES --- */
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 992px) {
+            .footer-container { grid-template-columns: repeat(2, 1fr); }
+            .hero h1 { font-size: 3rem; }
+        }
+        @media (max-width: 768px) {
+            .landing-burger { display: block; }
+            .nav-menu, .landing-nav-actions { display: none; } 
+            .mobile-menu-active .nav-menu, .mobile-menu-active .landing-nav-actions { display: flex; flex-direction: column; width: 100%; text-align: left; }
+            .landing-nav.mobile-menu-active { flex-direction: column; align-items: flex-start; padding: 1rem; background: var(--bg-dark); height: 100vh; justify-content: flex-start; gap: 2rem; }
+            .mobile-menu-active .sidebar-logo { margin-bottom: 2rem; }
+            .mobile-menu-active .landing-nav-actions { flex-direction: column; width: 100%; align-items: stretch; }
+            .faq-grid { grid-template-columns: 1fr; }
+            .typewriter-wrapper { min-height: 80px; }
+            .footer-container { grid-template-columns: 1fr; gap: 2.5rem; }
+            .live-stats-container { flex-direction: column; align-items: stretch; }
+            .stat-card { width: 100%; }
+        }
+    </style>
 </head>
 <body>
+    <div class="bg-animation"></div>
+
     <div class="landing-page">
-        <nav class="landing-nav">
+        <!-- NAVBAR -->
+        <nav class="landing-nav" id="navbar">
             <a href="/" class="sidebar-logo">
-                <div class="logo-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
-                <div class="logo-text">Odzreshop API</div>
+                <div class="logo-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+                <div class="logo-text">Odzreshop</div>
             </a>
-            <button class="landing-burger" onclick="document.querySelector('.landing-nav-links').classList.toggle('open')" aria-label="Menu">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            
+            <button class="landing-burger" onclick="document.getElementById('navbar').classList.toggle('mobile-menu-active')" aria-label="Menu">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
-            <div class="landing-nav-links">
-                <a href="/docs" class="btn btn-secondary btn-sm" target="_blank"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:text-bottom; margin-right:4px;"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg> API Docs</a>
+            
+            <div class="nav-menu">
+                <a href="#">Beranda</a>
+                <a href="#fitur">Solusi Bisnis</a>
+                <a href="#faq">FAQ</a>
+                <a href="/docs" target="_blank">
+                    API Docs <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </a>
+            </div>
+            
+            <div class="landing-nav-actions">
                 <a href="/user/login" class="btn btn-secondary btn-sm">Masuk</a>
-                <a href="/user/register" class="btn btn-primary btn-sm">Daftar</a>
+                <a href="/user/register" class="btn btn-primary btn-sm">Member Area</a>
             </div>
         </nav>
 
+        <!-- HERO SECTION -->
         <section class="hero">
             <h1>REST API <span>Powerful</span><br>untuk Bisnis Anda</h1>
-            <p>Platform all-in-one untuk Payment QRIS, WA Gateway, Digiflazz Tools, Alight Motion Premium, dan berbagai layanan API lainnya.</p>
+            
+            <p class="typewriter-wrapper">
+                <span id="typewriter-text"></span><span class="cursor"></span>
+            </p>
+
             <div class="hero-actions">
-                <a href="/user/register" class="btn btn-primary btn-lg"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:text-bottom; margin-right:4px;"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg> Mulai Sekarang</a>
-                <a href="/docs" class="btn btn-secondary btn-lg" target="_blank"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:text-bottom; margin-right:4px;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Lihat Dokumentasi</a>
+                <a href="/user/register" class="btn btn-primary btn-lg">Mulai Sekarang</a>
+                <a href="/docs" class="btn btn-secondary btn-lg" target="_blank">Lihat Dokumentasi</a>
             </div>
+
+            <!-- MODERN LIVE STATS SECTION -->
+            <div class="live-stats-container">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                            Transaksi Hari Ini
+                        </div>
+                        <div class="live-badge">
+                            <div class="live-dot"></div> Live
+                        </div>
+                    </div>
+                    <div class="stat-body">
+                        <div class="stat-value" id="stat-transactions">0</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                            Total Request API
+                        </div>
+                        <div class="live-badge">
+                            <div class="live-dot"></div> Live
+                        </div>
+                    </div>
+                    <div class="stat-body">
+                        <div class="stat-value" id="stat-volume">0</div>
+                    </div>
+                </div>
+            </div>
+
         </section>
 
-        <section class="features">
-            <h2>Fitur Unggulan</h2>
+        <!-- FEATURES SECTION -->
+        <section id="fitur" class="section-container">
+            <h2 class="section-title">Fitur Unggulan</h2>
             <p class="subtitle">Semua yang Anda butuhkan dalam satu platform API</p>
             <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon green">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                    </div>
+                
+                <div class="feature-card scroll-anim">
+                    <div class="feature-icon green"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
                     <h3>GoPay Merchant</h3>
                     <p>Login OTP, cek mutasi realtime, dan buat order QRIS dengan auto-polling pembayaran otomatis.</p>
+                    <div class="feature-arrow">Pelajari lebih lanjut <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon blue">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-                    </div>
+
+                <div class="feature-card scroll-anim">
+                    <div class="feature-icon blue"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
                     <h3>OrderKuota</h3>
                     <p>Integrasi QRIS OrderKuota lengkap dengan login, mutasi, dan order QRIS auto-callback.</p>
+                    <div class="feature-arrow">Pelajari lebih lanjut <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon purple">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h10v10H7z"/><path d="M7 3v4M17 3v4M7 17v4M17 17v4M3 7h4M3 17h4M17 7h4M17 17h4"/></svg>
-                    </div>
+
+                <div class="feature-card scroll-anim">
+                    <div class="feature-icon purple"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h10v10H7z"/><path d="M7 3v4M17 3v4M7 17v4M17 17v4M3 7h4M3 17h4M17 7h4M17 17h4"/></svg></div>
                     <h3>Payment QRIS</h3>
                     <p>Konversi QRIS statis menjadi dinamis dengan nominal custom. Gambar QRIS auto-generated.</p>
+                    <div class="feature-arrow">Pelajari lebih lanjut <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon green">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-                    </div>
+
+                <div class="feature-card scroll-anim">
+                    <div class="feature-icon green"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
                     <h3>WA Gateway</h3>
                     <p>WhatsApp Gateway untuk kirim pesan, broadcast, dan notifikasi otomatis ke pelanggan.</p>
+                    <div class="feature-arrow">Pelajari lebih lanjut <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon yellow">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                    </div>
+
+                <div class="feature-card scroll-anim">
+                    <div class="feature-icon yellow"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
                     <h3>Digiflazz Tools</h3>
                     <p>Update harga seller produk Digiflazz, manajemen kategori, brand, dan tipe produk.</p>
+                    <div class="feature-arrow">Pelajari lebih lanjut <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon blue">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    </div>
+
+                <div class="feature-card scroll-anim">
+                    <div class="feature-icon blue"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
                     <h3>Cek ID Game</h3>
                     <p>Verifikasi username dan nickname dari berbagai game populer langsung via API.</p>
+                    <div class="feature-arrow">Pelajari lebih lanjut <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon purple">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                    </div>
+                
+                <div class="feature-card scroll-anim">
+                    <div class="feature-icon purple"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
                     <h3>Alight Motion</h3>
                     <p>Upgrade akun Alight Motion ke Premium selama 1 tahun langsung dari dashboard.</p>
+                    <div class="feature-arrow">Pelajari lebih lanjut <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
                 </div>
             </div>
         </section>
 
-        <section class="features" style="padding-top:0">
-            <h2>Keunggulan Platform</h2>
+        <!-- KEUNGGULAN SECTION -->
+        <section class="section-container" style="padding-top:0">
+            <h2 class="section-title">Keunggulan Platform</h2>
             <p class="subtitle">Dibangun untuk developer, dirancang untuk kecepatan</p>
             <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon purple">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                    </div>
+                <div class="feature-card scroll-anim">
+                    <div class="feature-icon purple"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
                     <h3>Enkripsi AES-256</h3>
                     <p>Token dan data sensitif dienkripsi dengan standar keamanan tingkat militer.</p>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon green">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                    </div>
+                <div class="feature-card scroll-anim">
+                    <div class="feature-icon green"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
                     <h3>Auto-Polling</h3>
                     <p>Deteksi pembayaran otomatis setiap 25 detik dengan webhook callback.</p>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon blue">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-                    </div>
+                <div class="feature-card scroll-anim">
+                    <div class="feature-icon blue"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></div>
                     <h3>API Key Aman</h3>
                     <p>Setiap user mendapat API key unik 12 digit dengan rate limiting dan masa aktif.</p>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon yellow">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                    </div>
+                <div class="feature-card scroll-anim">
+                    <div class="feature-icon yellow"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
                     <h3>Dokumentasi Lengkap</h3>
                     <p>API Docs interaktif dengan contoh request dan response di setiap endpoint.</p>
                 </div>
             </div>
         </section>
 
-        <footer class="landing-footer">
-            <p id="footerCredit">© 2025 Odzreshop API — Made with <svg width="14" height="14" viewBox="0 0 24 24" fill="#ef4444" stroke="none" style="vertical-align:middle;margin:0 3px;animation:heartbeat 1.5s ease-in-out infinite;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></p>
-            <style>@keyframes heartbeat{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}</style>
+        <!-- FAQ SECTION -->
+        <section id="faq" class="section-container" style="padding-top:2rem">
+            <h2 class="section-title">Odzreshop Selalu Ada Untuk Bisnis Kamu</h2>
+            <p class="subtitle">Pertanyaan yang sering ditanyakan seputar layanan kami</p>
+            
+            <div class="faq-grid">
+                <details class="faq-item scroll-anim">
+                    <summary class="faq-question">Apa itu Odzreshop API?</summary>
+                    <div class="faq-answer">Odzreshop API adalah platform layanan penyedia antarmuka pemrograman aplikasi (API) yang memudahkan developer dan pebisnis untuk mengintegrasikan layanan seperti QRIS Payment, Cek ID Game, dan WA Gateway ke dalam sistem mereka sendiri.</div>
+                </details>
+
+                <details class="faq-item scroll-anim">
+                    <summary class="faq-question">Apakah Ada biaya bulanan di Odzreshop?</summary>
+                    <div class="faq-answer">Ya, kami memiliki sistem berlangganan yang sangat terjangkau. Biaya bulanan <b>mulai dari Rp 5.500/bulan</b> saja untuk memberikan Anda akses penuh ke berbagai fitur layanan API unggulan kami.</div>
+                </details>
+
+                <details class="faq-item scroll-anim">
+                    <summary class="faq-question">Apakah Metode QRIS tersedia?</summary>
+                    <div class="faq-answer">Ya, kami menyediakan layanan konversi QRIS statis menjadi QRIS dinamis lengkap dengan nominal custom dan sistem deteksi pembayaran otomatis (Auto-polling & Webhook).</div>
+                </details>
+
+                <details class="faq-item scroll-anim">
+                    <summary class="faq-question">Apakah Tersedia Realtime Settlement?</summary>
+                    <div class="faq-answer">Tergantung pada jenis layanan QRIS yang Anda integrasikan. Untuk layanan integrasi via akun e-wallet Anda sendiri, dana akan masuk secara realtime ke akun e-wallet/merchant Anda.</div>
+                </details>
+
+                <details class="faq-item scroll-anim">
+                    <summary class="faq-question">Berapa Lama Proses Aktivasi Akun?</summary>
+                    <div class="faq-answer">Aktivasi akun dilakukan secara instan. Setelah Anda mendaftar, Anda bisa langsung membuat API Key di dashboard dan mulai mencoba layanan kami.</div>
+                </details>
+
+                <details class="faq-item scroll-anim">
+                    <summary class="faq-question">Info Lengkap Integrasi API?</summary>
+                    <div class="faq-answer">Anda dapat melihat tata cara integrasi, contoh request, dan response dari masing-masing endpoint langsung melalui halaman <b>API Docs</b> kami yang interaktif.</div>
+                </details>
+            </div>
+        </section>
+
+        <!-- FOOTER (DYNAMIC - LOADED FROM API) -->
+        <footer class="footer-detailed" id="siteFooter">
+            <div class="footer-container" id="footerContent">
+                <!-- Footer loaded dynamically from settings -->
+            </div>
         </footer>
     </div>
 
-    <!-- CS Chat Widget -->
-    <div class="cs-widget" id="csWidget" style="display:none">
-        <div class="cs-box" id="csBox">
-            <div class="cs-box-header">
-                <div class="cs-box-header-avatar"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.549 4.126 1.518 5.865L.057 23.764l6.087-1.42A11.94 11.94 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.82c-1.918 0-3.79-.516-5.417-1.49l-.389-.231-3.61.842.885-3.494-.253-.403A9.78 9.78 0 0 1 2.18 12c0-5.424 4.396-9.82 9.82-9.82 5.424 0 9.82 4.396 9.82 9.82 0 5.424-4.396 9.82-9.82 9.82z"/></svg></div>
-                <div class="cs-box-header-info"><h4>Customer Service</h4><p>Biasanya membalas dalam hitungan menit</p></div>
-            </div>
-            <div class="cs-box-body">
-                <p><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:text-bottom; margin-right:4px;"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg> Halo! Ada yang bisa kami bantu? Ketik pesan Anda di bawah ini.</p>
-                <div class="cs-box-input">
-                    <input type="text" id="csMessage" placeholder="Tulis pesan..." onkeydown="if(event.key==='Enter')sendCsMessage()">
-                    <button onclick="sendCsMessage()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
-                </div>
-            </div>
-        </div>
-        <button class="cs-btn" onclick="toggleCsBox()" title="Chat Customer Service">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.549 4.126 1.518 5.865L.057 23.764l6.087-1.42A11.94 11.94 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.82c-1.918 0-3.79-.516-5.417-1.49l-.389-.231-3.61.842.885-3.494-.253-.403A9.78 9.78 0 0 1 2.18 12c0-5.424 4.396-9.82 9.82-9.82 5.424 0 9.82 4.396 9.82 9.82 0 5.424-4.396 9.82-9.82 9.82z"/></svg>
-        </button>
-    </div>
-
     <script>
-    let _csWaNumber = '';
-    function toggleCsBox() { document.getElementById('csBox').classList.toggle('open'); }
-    function sendCsMessage() {
-        const msg = document.getElementById('csMessage').value.trim();
-        if (!msg || !_csWaNumber) return;
-        window.open('https://wa.me/' + _csWaNumber + '?text=' + encodeURIComponent(msg), '_blank');
-        document.getElementById('csMessage').value = '';
-        document.getElementById('csBox').classList.remove('open');
-    }
-    fetch('/api/site-config').then(r=>r.json()).then(c=>{
-        if(c.title) document.title = c.title + ' — REST API Platform';
-        if(c.favicon){const l=document.createElement('link');l.rel='icon';l.href=c.favicon;document.head.appendChild(l);}
-        if(c.siteName) document.querySelector('.logo-text').textContent=c.siteName;
-        if(c.author) document.getElementById('footerCredit').innerHTML='© 2025 '+c.author+' — Made with <svg width="14" height="14" viewBox="0 0 24 24" fill="#ef4444" stroke="none" style="vertical-align:middle;margin:0 3px;animation:heartbeat 1.5s ease-in-out infinite;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
-        if(c.whatsapp) { _csWaNumber = c.whatsapp; document.getElementById('csWidget').style.display = 'block'; }
-    }).catch(()=>{});
+        /* SCROLL ANIMASI */
+        document.addEventListener("DOMContentLoaded", function() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) { entry.target.classList.add("visible"); }
+                });
+            }, { threshold: 0.1 });
+            document.querySelectorAll('.scroll-anim').forEach((el) => observer.observe(el));
+        });
+        
+        /* FIX ACCORDION FAQ */
+        const details = document.querySelectorAll("details.faq-item");
+        details.forEach((targetDetail) => {
+            targetDetail.addEventListener("click", () => {
+                details.forEach((detail) => {
+                    if (detail !== targetDetail) { detail.removeAttribute("open"); }
+                });
+            });
+        });
+
+        /* ANIMASI KETIK (TYPEWRITER) */
+        const typeText = "Platform all-in-one untuk Payment QRIS, WA Gateway, Digiflazz Tools, Alight Motion Premium, dan berbagai layanan API lainnya.";
+        const typeElement = document.getElementById('typewriter-text');
+        let charIndex = 0;
+        let isDeleting = false;
+
+        function typeWriterEffect() {
+            typeElement.textContent = typeText.substring(0, charIndex);
+            let typeSpeed = 40;
+            if (isDeleting) typeSpeed = 20;
+            if (!isDeleting && charIndex === typeText.length) { typeSpeed = 3000; isDeleting = true; }
+            else if (isDeleting && charIndex === 0) { isDeleting = false; typeSpeed = 500; }
+            charIndex += isDeleting ? -1 : 1;
+            setTimeout(typeWriterEffect, typeSpeed);
+        }
+
+        /* LIVE STATS - REAL DATA FROM API */
+        let liveTransactions = 0;
+        let liveVolume = 0;
+
+        async function fetchLiveStats() {
+            try {
+                const res = await fetch('/api/public/live-stats');
+                const data = await res.json();
+                if (data.success) {
+                    const newTx = data.data.transactions_today || 0;
+                    const newVol = data.data.volume_today || 0;
+                    
+                    // Animate only if changed
+                    if (newTx !== liveTransactions || newVol !== liveVolume) {
+                        liveTransactions = newTx;
+                        liveVolume = newVol;
+                        
+                        const txEl = document.getElementById('stat-transactions');
+                        const volEl = document.getElementById('stat-volume');
+                        
+                        txEl.textContent = liveTransactions.toLocaleString('id-ID');
+                        volEl.textContent = liveVolume.toLocaleString('id-ID');
+                        
+                        txEl.style.animation = 'none'; volEl.style.animation = 'none';
+                        txEl.offsetHeight; volEl.offsetHeight;
+                        txEl.style.animation = 'number-bump 0.4s ease-out forwards';
+                        volEl.style.animation = 'number-bump 0.4s ease-out forwards';
+                    }
+                }
+            } catch (e) { /* silent fail */ }
+        }
+
+        /* DYNAMIC FOOTER FROM SETTINGS */
+        async function loadFooter() {
+            try {
+                const res = await fetch('/api/public/footer-settings');
+                const data = await res.json();
+                if (!data.success || !data.data) return renderDefaultFooter();
+                const f = data.data;
+                
+                document.getElementById('footerContent').innerHTML = `
+                    <div class="footer-col brand-col">
+                        <a href="/" class="footer-logo-wrap">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                            <span>${f.brand_name || 'Odzreshop'}</span>
+                        </a>
+                        <p style="margin-top:1rem;">${f.address || ''}</p>
+                        <br><p>${f.copyright || ''}</p>
+                        <div class="social-links">
+                            ${f.facebook_url ? '<a href="'+f.facebook_url+'" aria-label="Facebook" target="_blank"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></a>' : ''}
+                            ${f.instagram_url ? '<a href="'+f.instagram_url+'" aria-label="Instagram" target="_blank"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>' : ''}
+                        </div>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Navigasi</h4>
+                        <ul>
+                            <li><a href="/docs">Api Docs</a></li>
+                            <li><a href="/user/register">Member Area</a></li>
+                            <li><a href="#fitur">Fitur</a></li>
+                            <li><a href="#faq">FAQ</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Kontak Kami</h4>
+                        ${f.email ? '<p><a href="mailto:'+f.email+'" class="text-link">'+f.email+'</a></p>' : ''}
+                        ${f.whatsapp ? '<p>WhatsApp <a href="https://wa.me/'+f.whatsapp.replace(/[^0-9]/g,'')+'" class="text-link">'+f.whatsapp+'</a></p>' : ''}
+                        ${f.wa_channel_url ? '<br><h4>Our News Channel</h4><p style="margin-bottom:1rem;">'+( f.wa_channel_text || 'Gabung channel kami untuk info terbaru')+'</p><a href="'+f.wa_channel_url+'" class="btn-wa-group" target="_blank"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> WhatsApp Group</a>' : ''}
+                    </div>
+                    <div class="footer-col">
+                        <p class="footer-disclaimer">${f.disclaimer || ''}</p>
+                    </div>`;
+            } catch (e) { renderDefaultFooter(); }
+        }
+
+        function renderDefaultFooter() {
+            document.getElementById('footerContent').innerHTML = `
+                <div class="footer-col brand-col">
+                    <a href="/" class="footer-logo-wrap">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                        <span>Odzreshop</span>
+                    </a>
+                    <p style="margin-top:1rem;">Alamat belum dikonfigurasi.</p>
+                </div>
+                <div class="footer-col"><h4>Navigasi</h4><ul><li><a href="/docs">Api Docs</a></li><li><a href="/user/register">Member Area</a></li></ul></div>
+                <div class="footer-col"><h4>Kontak</h4><p>Belum dikonfigurasi.</p></div>
+                <div class="footer-col"><p class="footer-disclaimer">Footer belum diatur. Silakan konfigurasi melalui dashboard admin.</p></div>`;
+        }
+
+        /* INIT */
+        document.addEventListener("DOMContentLoaded", () => {
+            setTimeout(typeWriterEffect, 1000);
+            loadFooter();
+            fetchLiveStats();
+            setInterval(fetchLiveStats, 5000);
+        });
     </script>
+    <script src="/user/js/protect.js"></script>
 </body>
 </html>
