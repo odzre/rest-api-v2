@@ -80,7 +80,16 @@ const App={
         }
         el.innerHTML=statusHtml+`<div class="section-title">${IC.box} Pilih Paket Langganan</div><div class="plans-grid page-content">${plans.map(p=>{
             const benefits=(p.benefits||[]).map(b=>`<li>${IC.check} ${b}</li>`).join('');
-            return`<div class="plan-card"><div class="plan-name">${p.name}</div><div class="plan-price">Rp ${p.price.toLocaleString('id-ID')}</div><div class="plan-duration">${p.duration_days} hari masa aktif</div><div class="plan-desc">${p.description||''}</div>${benefits?`<ul class="plan-benefits">${benefits}</ul>`:''}<button class="btn btn-primary plan-cta" id="buyBtn${p.id}" onclick="App.buySubscription(${p.id},'${p.name.replace(/'/g,"\\'")}')">Beli Sekarang</button></div>`;
+            const featureList=[
+                {label:'GoPay Merchant',allowed:!!p.allow_gopay},
+                {label:'OrderKuota',allowed:!!p.allow_orderkouta},
+                {label:'Digiflazz Tools',allowed:!!p.allow_digiflazz},
+                {label:'WA Gateway',allowed:!!p.allow_wa_gateway},
+                {label:'Alight Motion',allowed:!!p.allow_alight_motion}
+            ];
+            const featureBadges=featureList.map(f=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;margin:3px 4px;background:${f.allowed?'rgba(16,185,129,0.12)':'rgba(239,68,68,0.10)'};color:${f.allowed?'var(--green,#10b981)':'var(--red,#ef4444)'};border:1px solid ${f.allowed?'rgba(16,185,129,0.25)':'rgba(239,68,68,0.18)'}">${f.allowed?IC.check:IC.x} ${f.label}</span>`).join('');
+            const featureSection=`<div style="margin-top:12px"><div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text-secondary,#94a3b8)">Akses Fitur</div><div style="display:flex;flex-wrap:wrap;gap:2px">${featureBadges}</div></div>`;
+            return`<div class="plan-card"><div class="plan-name">${p.name}</div><div class="plan-price">Rp ${p.price.toLocaleString('id-ID')}</div><div class="plan-duration">${p.duration_days} hari masa aktif</div><div class="plan-desc">${p.description||''}</div>${benefits?`<ul class="plan-benefits">${benefits}</ul>`:''}${featureSection}<button class="btn btn-primary plan-cta" id="buyBtn${p.id}" onclick="App.buySubscription(${p.id},'${p.name.replace(/'/g,"\\'")}')">Beli Sekarang</button></div>`;
         }).join('')}</div>`;
     },
     async buySubscription(planId,planName){
@@ -113,22 +122,48 @@ const App={
         const status=await UserAuth.apiFetch('/api/user/gopay/token-status');
         if(this._checkFeatureBlock(status,el))return;
         const hasToken=status?.data?.hasToken;
+        const statusClass=hasToken?'success':'';
+        const statusIcon=hasToken?'<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>':'<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
         el.innerHTML=`<div class="page-content">
-            <div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">STATUS TOKEN GOPAY</div><div class="stat-value" style="font-size:18px;color:${hasToken?'var(--green)':'var(--red)'};">${hasToken?'Token Tersimpan':'Belum Setup'}</div><div class="stat-sub">${hasToken?'Terakhir disimpan: '+(status.data.savedAt?new Date(status.data.savedAt).toLocaleString('id-ID'):'—'):'Silakan setup token GoPay Merchant Anda'}</div></div>${hasToken?'<button class="btn btn-danger btn-sm" onclick="App.deleteGopayToken()">Hapus Token</button>':''}</div></div>
-            <div class="section-title">${IC.dollar} Setup GoPay Merchant</div>
-            <div class="otp-steps"><div class="otp-step active" id="gopayStep1">1. Request OTP</div><div class="otp-step" id="gopayStep2">2. Verifikasi OTP</div><div class="otp-step" id="gopayStep3">3. Simpan Token</div></div>
-            <div class="settings-section">
-                <div class="otp-panel active" id="gopayPanel1">
-                    <div class="form-group"><label class="form-label">Nomor HP GoPay</label><input class="form-input" id="gopayPhone" placeholder="83xxxxxxx (tanpa 0 atau 62)"></div>
-                    <button class="btn btn-primary" onclick="App.gopayRequestOtp()" id="gopayOtpBtn">Kirim OTP</button>
+            <div class="glass-card status-card ${statusClass}">
+                <div class="status-line"></div>
+                <div>
+                    <span class="section-label">Status Token GoPay</span>
+                    <div class="status-title">${statusIcon}<span>${hasToken?'Token Tersimpan':'Belum Tersimpan'}</span></div>
+                    <div class="status-time">${hasToken?'Terakhir disimpan: '+(status.data.savedAt?new Date(status.data.savedAt).toLocaleString('id-ID'):'—'):'Silakan login untuk setup token'}</div>
                 </div>
-                <div class="otp-panel" id="gopayPanel2">
-                    <div class="form-group"><label class="form-label">Kode OTP</label><input class="form-input" id="gopayOtp" placeholder="Masukkan kode OTP"></div>
-                    <button class="btn btn-primary" onclick="App.gopayVerifyOtp()" id="gopayVerifyBtn">Verifikasi OTP</button>
+                ${hasToken?'<button class="btn-status-action" onclick="App.deleteGopayToken()">Hapus</button>':''}
+            </div>
+            <div class="setup-header">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Setup GoPay Merchant
+            </div>
+            <div class="modern-stepper">
+                <div class="stepper-track"><div class="stepper-fill" id="gopayProgress"></div></div>
+                <div class="stepper-nodes">
+                    <div class="node-wrapper"><div class="node active" id="gopayNode1">1</div><span class="node-label">Request OTP</span></div>
+                    <div class="node-wrapper"><div class="node" id="gopayNode2">2</div><span class="node-label">Verifikasi</span></div>
+                    <div class="node-wrapper"><div class="node" id="gopayNode3">3</div><span class="node-label">Selesai</span></div>
                 </div>
-                <div class="otp-panel" id="gopayPanel3">
-                    <p style="color:var(--green);font-weight:600;margin-bottom:12px">Token berhasil didapatkan dan disimpan!</p>
-                    <p style="color:var(--text-muted);font-size:13px">Token GoPay Merchant Anda telah dienkripsi dan tersimpan dengan aman. Anda sekarang bisa menggunakan endpoint order tanpa memasukkan token manual.</p>
+            </div>
+            <div class="glass-card">
+                <div class="form-section active" id="gopayPanel1">
+                    <div class="form-group"><label class="form-label">Nomor HP GoPay</label><input class="form-control" id="gopayPhone" placeholder="83xxxxxxx (tanpa 0 atau 62)"></div>
+                    <button class="btn-submit" onclick="App.gopayRequestOtp()" id="gopayOtpBtn"><div class="loader"></div><span class="btn-text">Kirim OTP</span></button>
+                </div>
+                <div class="form-section" id="gopayPanel2">
+                    <div class="form-group" style="text-align:center;margin-bottom:24px">
+                        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Masukkan kode OTP yang dikirim ke nomor GoPay Anda.</p>
+                        <input class="form-control center-text" id="gopayOtp" placeholder="0000" maxlength="6">
+                    </div>
+                    <button class="btn-submit" onclick="App.gopayVerifyOtp()" id="gopayVerifyBtn"><div class="loader"></div><span class="btn-text">Verifikasi OTP</span></button>
+                </div>
+                <div class="form-section" id="gopayPanel3">
+                    <div class="success-view">
+                        <div class="success-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                        <h3>Setup Berhasil!</h3>
+                        <p>Token GoPay Merchant telah tersimpan dan siap digunakan untuk transaksi otomatis.</p>
+                    </div>
                 </div>
             </div>
         </div>`;
@@ -149,8 +184,10 @@ const App={
             return;
         }
         this._gopayOtpData=data.data;Toast.success('OTP telah dikirim!');
-        document.getElementById('gopayStep1').classList.replace('active','done');
-        document.getElementById('gopayStep2').classList.add('active');
+        document.getElementById('gopayProgress').style.width='50%';
+        document.getElementById('gopayNode1').classList.add('completed');document.getElementById('gopayNode1').classList.remove('active');
+        document.getElementById('gopayNode1').innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        document.getElementById('gopayNode2').classList.add('active');
         document.getElementById('gopayPanel1').classList.remove('active');
         document.getElementById('gopayPanel2').classList.add('active');
     },
@@ -168,10 +205,14 @@ const App={
         const res=await UserAuth.apiFetch('/api/user/gopay/save-token',{method:'POST',body:JSON.stringify({access_token:at,refresh_token:rt,x_uniqueid:uid})});
         if(res?.success){
             Toast.success('Token GoPay berhasil disimpan!');
-            document.getElementById('gopayStep2').classList.replace('active','done');
-            document.getElementById('gopayStep3').classList.add('active');
+            document.getElementById('gopayProgress').style.width='100%';
+            document.getElementById('gopayNode2').classList.add('completed');document.getElementById('gopayNode2').classList.remove('active');
+            document.getElementById('gopayNode2').innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            document.getElementById('gopayNode3').classList.add('completed');
+            document.getElementById('gopayNode3').innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
             document.getElementById('gopayPanel2').classList.remove('active');
             document.getElementById('gopayPanel3').classList.add('active');
+            const card=document.querySelector('.status-card');if(card)card.classList.add('success');
         }else Toast.error(res?.message||'Gagal menyimpan token.');
     },
     async deleteGopayToken(){
@@ -187,23 +228,49 @@ const App={
         const status=await UserAuth.apiFetch('/api/user/orderkouta/token-status');
         if(this._checkFeatureBlock(status,el))return;
         const hasToken=status?.data?.hasToken;
+        const statusClass=hasToken?'success':'';
+        const statusIcon=hasToken?'<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>':'<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
         el.innerHTML=`<div class="page-content">
-            <div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">STATUS TOKEN ORDERKOUTA</div><div class="stat-value" style="font-size:18px;color:${hasToken?'var(--green)':'var(--red)'};">${hasToken?'Token Tersimpan':'Belum Setup'}</div><div class="stat-sub">${hasToken?'Terakhir disimpan: '+(status.data.savedAt?new Date(status.data.savedAt).toLocaleString('id-ID'):'—'):'Silakan setup token OrderKuota Anda'}</div></div>${hasToken?'<button class="btn btn-danger btn-sm" onclick="App.deleteOrkutToken()">Hapus Token</button>':''}</div></div>
-            <div class="section-title">${IC.chart} Setup OrderKuota</div>
-            <div class="otp-steps"><div class="otp-step active" id="orkutStep1">1. Login</div><div class="otp-step" id="orkutStep2">2. Verifikasi OTP</div><div class="otp-step" id="orkutStep3">3. Simpan Token</div></div>
-            <div class="settings-section">
-                <div class="otp-panel active" id="orkutPanel1">
-                    <div class="form-group"><label class="form-label">Username OrderKuota</label><input class="form-input" id="orkutUsername" placeholder="Username"></div>
-                    <div class="form-group"><label class="form-label">Password OrderKuota</label><input class="form-input" type="password" id="orkutPassword" placeholder="Password"></div>
-                    <button class="btn btn-primary" onclick="App.orkutRequestOtp()" id="orkutOtpBtn">Login & Kirim OTP</button>
+            <div class="glass-card status-card ${statusClass}">
+                <div class="status-line"></div>
+                <div>
+                    <span class="section-label">Status Token OrderKuota</span>
+                    <div class="status-title">${statusIcon}<span>${hasToken?'Token Tersimpan':'Belum Tersimpan'}</span></div>
+                    <div class="status-time">${hasToken?'Terakhir disimpan: '+(status.data.savedAt?new Date(status.data.savedAt).toLocaleString('id-ID'):'—'):'Silakan login untuk setup token'}</div>
                 </div>
-                <div class="otp-panel" id="orkutPanel2">
-                    <div class="form-group"><label class="form-label">Kode OTP</label><input class="form-input" id="orkutOtp" placeholder="Masukkan kode OTP"></div>
-                    <button class="btn btn-primary" onclick="App.orkutVerifyOtp()" id="orkutVerifyBtn">Verifikasi OTP</button>
+                ${hasToken?'<button class="btn-status-action" onclick="App.deleteOrkutToken()">Hapus</button>':''}
+            </div>
+            <div class="setup-header">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Setup OrderKuota
+            </div>
+            <div class="modern-stepper">
+                <div class="stepper-track"><div class="stepper-fill" id="orkutProgress"></div></div>
+                <div class="stepper-nodes">
+                    <div class="node-wrapper"><div class="node active" id="orkutNode1">1</div><span class="node-label">Login</span></div>
+                    <div class="node-wrapper"><div class="node" id="orkutNode2">2</div><span class="node-label">Verifikasi OTP</span></div>
+                    <div class="node-wrapper"><div class="node" id="orkutNode3">3</div><span class="node-label">Selesai</span></div>
                 </div>
-                <div class="otp-panel" id="orkutPanel3">
-                    <p style="color:var(--green);font-weight:600;margin-bottom:12px">Token berhasil didapatkan dan disimpan!</p>
-                    <p style="color:var(--text-muted);font-size:13px">Token OrderKuota Anda telah dienkripsi dan tersimpan. Anda bisa menggunakan endpoint order tanpa memasukkan token manual.</p>
+            </div>
+            <div class="glass-card">
+                <div class="form-section active" id="orkutPanel1">
+                    <div class="form-group"><label class="form-label">Username OrderKuota</label><input class="form-control" id="orkutUsername" placeholder="Masukkan username"></div>
+                    <div class="form-group"><label class="form-label">Password OrderKuota</label><input class="form-control" type="password" id="orkutPassword" placeholder="Password"></div>
+                    <button class="btn-submit" onclick="App.orkutRequestOtp()" id="orkutOtpBtn"><div class="loader"></div><span class="btn-text">Login & Kirim OTP</span></button>
+                </div>
+                <div class="form-section" id="orkutPanel2">
+                    <div class="form-group" style="text-align:center;margin-bottom:24px">
+                        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Masukkan kode OTP yang dikirim ke WhatsApp/Email Anda.</p>
+                        <input class="form-control center-text" id="orkutOtp" placeholder="0000" maxlength="4">
+                    </div>
+                    <button class="btn-submit" onclick="App.orkutVerifyOtp()" id="orkutVerifyBtn"><div class="loader"></div><span class="btn-text">Verifikasi OTP</span></button>
+                </div>
+                <div class="form-section" id="orkutPanel3">
+                    <div class="success-view">
+                        <div class="success-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                        <h3>Setup Berhasil!</h3>
+                        <p>Token OrderKuota telah tersimpan dan siap digunakan untuk transaksi otomatis.</p>
+                    </div>
                 </div>
             </div>
         </div>`;
@@ -219,8 +286,10 @@ const App={
         const data=await res.json();btn.disabled=false;btn.textContent='Login & Kirim OTP';
         if(!data.success)return Toast.error(data.message);
         this._orkutUsername=u;Toast.success('OTP telah dikirim!');
-        document.getElementById('orkutStep1').classList.replace('active','done');
-        document.getElementById('orkutStep2').classList.add('active');
+        document.getElementById('orkutProgress').style.width='50%';
+        document.getElementById('orkutNode1').classList.add('completed');document.getElementById('orkutNode1').classList.remove('active');
+        document.getElementById('orkutNode1').innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        document.getElementById('orkutNode2').classList.add('active');
         document.getElementById('orkutPanel1').classList.remove('active');
         document.getElementById('orkutPanel2').classList.add('active');
     },
@@ -238,10 +307,14 @@ const App={
         const saveRes=await UserAuth.apiFetch('/api/user/orderkouta/save-token',{method:'POST',body:JSON.stringify({username:this._orkutUsername,auth_token:authToken})});
         if(saveRes?.success){
             Toast.success('Token OrderKuota berhasil disimpan!');
-            document.getElementById('orkutStep2').classList.replace('active','done');
-            document.getElementById('orkutStep3').classList.add('active');
+            document.getElementById('orkutProgress').style.width='100%';
+            document.getElementById('orkutNode2').classList.add('completed');document.getElementById('orkutNode2').classList.remove('active');
+            document.getElementById('orkutNode2').innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            document.getElementById('orkutNode3').classList.add('completed');
+            document.getElementById('orkutNode3').innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
             document.getElementById('orkutPanel2').classList.remove('active');
             document.getElementById('orkutPanel3').classList.add('active');
+            const card=document.querySelector('.status-card');if(card)card.classList.add('success');
         }else Toast.error(saveRes?.message||'Gagal menyimpan.');
     },
     async deleteOrkutToken(){
