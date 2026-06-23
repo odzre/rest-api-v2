@@ -72,20 +72,24 @@ body { font-family: var(--font); background: var(--bg-primary); color: var(--tex
 .admin-name { font-size: 13px; font-weight: 600; }
 .admin-role { font-size: 11px; color: var(--text-muted); }
 
-.hamburger-btn {
-    width: 40px; height: 40px; border-radius: var(--radius-sm); border: 1px solid var(--border);
-    background: var(--bg-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: var(--transition); color: var(--text-secondary); padding: 0;
+.menu-btn {
+    background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px;
+    width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s ease; padding: 0; color: var(--text-primary);
 }
-.hamburger-btn svg { width: 20px; height: 20px; }
-.hamburger-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-light); }
+.menu-btn:hover { background: rgba(255,255,255,0.05); }
+.menu-btn svg { stroke: var(--text-primary); }
+.header-text h1 {
+    font-size: 22px; font-weight: 700; letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #fff 0%, #a78bfa 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.header-text p { font-size: 13px; color: var(--text-muted); margin-top: 2px; font-weight: 500; }
 
 .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 99; }
 
 .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .main-header { padding: 20px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--bg-secondary); flex-shrink: 0; }
-.page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
-.page-subtitle { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
 .header-actions { display: flex; gap: 10px; align-items: center; }
 .main-body { flex: 1; overflow-y: auto; padding: 28px 32px; scroll-behavior: smooth; overscroll-behavior-y: contain; }
 
@@ -359,7 +363,7 @@ a, button, input, select, textarea, .nav-item, .btn, .stat-card, .feature-card, 
     .table-scroll-wrapper { margin: 0 -1px; }
 }
 @media (min-width: 769px) {
-    .hamburger-btn { display: none; }
+    .menu-btn { display: none; }
 }
 
 /* DIGIFLAZZ TERMINAL LOG */
