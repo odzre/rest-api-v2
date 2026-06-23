@@ -155,6 +155,16 @@ async function handlePaid(reffid, order, txData) {
     });
     console.log(`[Order] ✅ PAID: ${reffid} - Rp${order.nominal}`);
 
+    try {
+        const row = await db.getOne("SELECT `value` FROM settings WHERE `key` = 'global_transaction_volume'");
+        let currentVol = 0;
+        if (row && row.value) currentVol = parseInt(row.value, 10) || 0;
+        const newVol = currentVol + parseInt(order.nominal, 10);
+        await db.run("INSERT INTO settings (`key`, `value`) VALUES ('global_transaction_volume', ?) ON DUPLICATE KEY UPDATE `value` = ?", [newVol.toString(), newVol.toString()]);
+    } catch (e) {
+        console.error('[GlobalVolume] failed to update', e.message);
+    }
+
     if (order.webhook_url) {
         await sendWebhook(order.webhook_url, {
             reffid, status: 'PAID', nominal: order.nominal,
