@@ -100,11 +100,6 @@ async function logRequest(req, label, statusCode) {
             'INSERT INTO request_logs (timestamp, method, path, api_key_label, status_code, ip) VALUES (?, ?, ?, ?, ?, ?)',
             [new Date(), req.method, req.originalUrl, label, statusCode, req.ip]
         );
-
-        // Auto-trim: keep last 500 logs
-        await db.run(
-            'DELETE FROM request_logs WHERE id NOT IN (SELECT id FROM (SELECT id FROM request_logs ORDER BY id DESC LIMIT 500) AS t)'
-        );
     } catch (err) {
         console.error('[Auth] Log error:', err.message);
     }
