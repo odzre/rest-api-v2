@@ -43,6 +43,8 @@ const waCtrl = require('../controllers/waGatewayController');
 router.get('/wa/status', verifyUser, waCtrl.getStatus);
 router.get('/wa/connect', verifyUser, waCtrl.connect);
 router.post('/wa/pair', verifyUser, waCtrl.requestPair);
+router.get('/wa/settings', verifyUser, waCtrl.getSettings);
+router.post('/wa/settings', verifyUser, waCtrl.saveSettings);
 router.delete('/wa/disconnect', verifyUser, waCtrl.disconnect);
 router.post('/wa/send', verifyUser, waCtrl.sendMsg);
 router.post('/wa/broadcast', verifyUser, waCtrl.broadcastMsg);

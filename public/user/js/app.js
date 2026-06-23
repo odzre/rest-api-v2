@@ -547,9 +547,9 @@ const App={
     },
     _renderWaTabs(el){
         const s=this._waStatus;
-        const tabs=['koneksi','pesan','commands','grup'];
+        const tabs=['koneksi','pesan','commands','grup','pengaturan'];
         el.innerHTML=`<div class="page-content">
-            <div class="wa-tabs">${tabs.map(t=>`<button class="wa-tab${this._waTab===t?' active':''}" onclick="App._waTab='${t}';App._renderWaTabs(document.getElementById('pageContent'))">${t==='koneksi'?'Koneksi':t==='pesan'?'Pesan':t==='commands'?'Commands':t==='grup'?'Grup':t}</button>`).join('')}</div>
+            <div class="wa-tabs">${tabs.map(t=>`<button class="wa-tab${this._waTab===t?' active':''}" onclick="App._waTab='${t}';App._renderWaTabs(document.getElementById('pageContent'))">${t==='koneksi'?'Koneksi':t==='pesan'?'Pesan':t==='commands'?'Commands':t==='grup'?'Grup':t==='pengaturan'?'Pengaturan Bot':t}</button>`).join('')}</div>
             <div id="waTabContent"></div>
         </div>`;
         this['_waTab_'+this._waTab]();
@@ -691,26 +691,34 @@ const App={
         el.innerHTML=`<div class="section-title">${IC.shield} Auto-Reply Commands</div>
             <div class="settings-section">
                 <button class="btn btn-primary btn-sm" onclick="App._waShowAddCmd()">Tambah Command</button>
-                <div id="waCmdForm" style="display:none;margin-top:16px">
+                <div id="waCmdForm" style="display:none;margin-top:16px;background:var(--bg-secondary);padding:16px;border-radius:12px">
                     <div class="form-group"><label class="form-label">Trigger</label><input class="form-input" id="waCmdTrigger" placeholder=".harga"></div>
                     <div class="form-group"><label class="form-label">Tipe Matching</label><select class="form-input" id="waCmdType"><option value="exact">Exact Match</option><option value="startswith">Starts With</option><option value="contains">Contains</option></select></div>
-                    <div class="form-group"><label class="form-label">Response</label><textarea class="form-input" id="waCmdResponse" rows="3" placeholder="Balasan otomatis..."></textarea></div>
+                    
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+                        <div class="form-group" style="margin-bottom:0"><label class="form-label">Akses Pengguna</label><select class="form-input" id="waCmdPermWho"><option value="public">Semua User (Public)</option><option value="owner">Hanya Owner</option><option value="admin">Hanya Admin Grup</option></select></div>
+                        <div class="form-group" style="margin-bottom:0"><label class="form-label">Lokasi Chat</label><select class="form-input" id="waCmdPermWhere"><option value="all">Semua Tempat</option><option value="group">Hanya di Grup</option><option value="private">Hanya di Private Chat</option></select></div>
+                    </div>
+                    
+                    <div class="form-group"><label class="form-label">Response (Bisa pakai @user, @jam, @tanggal1, @tanggal2, @botname, @storename)</label><textarea class="form-input" id="waCmdResponse" rows="4" placeholder="Balasan otomatis..."></textarea></div>
                     <button class="btn btn-primary btn-sm" onclick="App._waSaveCmd()" id="waCmdSaveBtn">Simpan</button>
-                    <button class="btn btn-sm" onclick="document.getElementById('waCmdForm').style.display='none'" style="margin-left:8px">Batal</button>
+                    <button class="btn btn-sm" onclick="document.getElementById('waCmdForm').style.display='none'" style="margin-left:8px;background:var(--bg-card)">Batal</button>
                     <input type="hidden" id="waCmdEditId">
                 </div>
                 <div id="waCmdList" style="margin-top:16px"><div class="skeleton" style="height:80px"></div></div>
             </div>`;
         this._loadWaCmds();
     },
-    _waShowAddCmd(){document.getElementById('waCmdForm').style.display='block';document.getElementById('waCmdTrigger').value='';document.getElementById('waCmdResponse').value='';document.getElementById('waCmdEditId').value='';document.getElementById('waCmdType').value='exact';},
-    _waEditCmd(id,trigger,response,type){document.getElementById('waCmdForm').style.display='block';document.getElementById('waCmdTrigger').value=trigger;document.getElementById('waCmdResponse').value=response;document.getElementById('waCmdEditId').value=id;document.getElementById('waCmdType').value=type||'exact';},
+    _waShowAddCmd(){document.getElementById('waCmdForm').style.display='block';document.getElementById('waCmdTrigger').value='';document.getElementById('waCmdResponse').value='';document.getElementById('waCmdEditId').value='';document.getElementById('waCmdType').value='exact';document.getElementById('waCmdPermWho').value='public';document.getElementById('waCmdPermWhere').value='all';},
+    _waEditCmd(id,trigger,response,type,permWho,permWhere){document.getElementById('waCmdForm').style.display='block';document.getElementById('waCmdTrigger').value=trigger;document.getElementById('waCmdResponse').value=response;document.getElementById('waCmdEditId').value=id;document.getElementById('waCmdType').value=type||'exact';document.getElementById('waCmdPermWho').value=permWho||'public';document.getElementById('waCmdPermWhere').value=permWhere||'all';},
     async _waSaveCmd(){
         const trigger=document.getElementById('waCmdTrigger').value.trim();const response=document.getElementById('waCmdResponse').value;const type=document.getElementById('waCmdType').value;const editId=document.getElementById('waCmdEditId').value;
+        const who=document.getElementById('waCmdPermWho').value; const where=document.getElementById('waCmdPermWhere').value;
         if(!trigger||!response)return Toast.error('Trigger dan response wajib diisi!');
+        const permissions = { isOwner: who==='owner', isAdmin: who==='admin', isPublic: who==='public', isGroup: where==='group', isPrivate: where==='private' };
         const url=editId?`/api/user/wa/commands/${editId}`:'/api/user/wa/commands';
         const method=editId?'PUT':'POST';
-        const r=await UserAuth.apiFetch(url,{method,body:JSON.stringify({trigger,response,type})});
+        const r=await UserAuth.apiFetch(url,{method,body:JSON.stringify({trigger,response,type,permissions})});
         if(r?.success){Toast.success(editId?'Command diupdate!':'Command ditambahkan!');document.getElementById('waCmdForm').style.display='none';this._loadWaCmds();}else Toast.error(r?.message||'Gagal');
     },
     async _waDeleteCmd(id){
@@ -721,7 +729,14 @@ const App={
     async _loadWaCmds(){
         const r=await UserAuth.apiFetch('/api/user/wa/commands');const el=document.getElementById('waCmdList');
         if(!r?.success||!r.data?.length){el.innerHTML='<div class="empty-state" style="padding:16px"><p>Belum ada command.</p></div>';return;}
-        el.innerHTML=`<table class="data-table"><thead><tr><th>Trigger</th><th>Tipe</th><th>Response</th><th>Aksi</th></tr></thead><tbody>${r.data.map(c=>`<tr><td><code>${c.trigger}</code></td><td>${c.type}</td><td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.response}</td><td style="white-space:nowrap"><button class="btn btn-sm" onclick="App._waEditCmd('${c.id}','${c.trigger.replace(/'/g,"\\'")}',\`${c.response.replace(/`/g,"\\`")}\`,'${c.type}')">Edit</button> <button class="btn btn-danger btn-sm" onclick="App._waDeleteCmd('${c.id}')">Hapus</button></td></tr>`).join('')}</tbody></table>`;
+        el.innerHTML=`<table class="data-table"><thead><tr><th>Trigger</th><th>Tipe</th><th>Akses</th><th>Response</th><th>Aksi</th></tr></thead><tbody>${r.data.map(c=>{
+            const p=c.permissions||{};
+            const who=p.isOwner?'owner':p.isAdmin?'admin':'public';
+            const where=p.isGroup?'group':p.isPrivate?'private':'all';
+            const badgeWho = who==='owner'?'<span class="badge" style="background:#ff4757;color:#fff">Owner</span>':who==='admin'?'<span class="badge" style="background:#ffa502;color:#fff">Admin</span>':'<span class="badge" style="background:#2ed573;color:#fff">Public</span>';
+            const badgeWhere = where==='group'?'<span class="badge" style="background:#3742fa;color:#fff">Grup</span>':where==='private'?'<span class="badge" style="background:#747d8c;color:#fff">Private</span>':'<span class="badge" style="background:#dfe4ea;color:#2f3542">All</span>';
+            return `<tr><td><code>${c.trigger}</code></td><td>${c.type}</td><td>${badgeWho} ${badgeWhere}</td><td style="max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.response}</td><td style="white-space:nowrap"><button class="btn btn-sm" onclick="App._waEditCmd('${c.id}','${c.trigger.replace(/'/g,"\\'")}',\`${c.response.replace(/`/g,"\\`")}\`,'${c.type}','${who}','${where}')">Edit</button> <button class="btn btn-danger btn-sm" onclick="App._waDeleteCmd('${c.id}')">Hapus</button></td></tr>`;
+        }).join('')}</tbody></table>`;
     },
 
     // TAB: GRUP
@@ -738,6 +753,41 @@ const App={
             <div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${g.subject}</strong><div style="font-size:12px;color:var(--text-muted)">${g.participants} anggota</div></div>
             <button class="btn btn-primary btn-sm" onclick="App._waShowGroupSend('${g.id}','${g.subject.replace(/'/g,"\\'")}')">Kirim Pesan</button></div>
         </div>`).join('');
+    },
+    
+    // TAB: PENGATURAN
+    async _waTab_pengaturan(){
+        const el=document.getElementById('waTabContent');
+        el.innerHTML='<div class="skeleton" style="height:200px"></div>';
+        const r=await UserAuth.apiFetch('/api/user/wa/settings');
+        const s=r?.data||{botName:'',storeName:'',ownerNumber:''};
+        el.innerHTML=`<div class="section-title">${IC.settings} Pengaturan Bot Global</div>
+            <div class="settings-section">
+                <div class="form-group"><label class="form-label">Nomor Owner (Gunakan awalan 62)</label><input class="form-input" id="waSetOwner" value="${s.ownerNumber}" placeholder="628123456789"></div>
+                <div class="form-group"><label class="form-label">Nama Bot (Variabel: @botname)</label><input class="form-input" id="waSetBot" value="${s.botName}" placeholder="Misal: Si Bot Keren"></div>
+                <div class="form-group"><label class="form-label">Nama Store / Toko (Variabel: @storename)</label><input class="form-input" id="waSetStore" value="${s.storeName}" placeholder="Misal: Odzre Store"></div>
+                <button class="btn btn-primary" onclick="App._waSaveSettings()" id="waSetBtn">Simpan Pengaturan</button>
+            </div>
+            <div class="info-alert" style="margin-top:16px;background:var(--bg-secondary);padding:16px;border-radius:12px">
+                <strong style="color:var(--accent-light)">💡 Variabel Tersedia untuk Response Command:</strong><br><br>
+                <code>@user</code> : Tag / Mention pengguna yang mengirim pesan<br>
+                <code>@jam</code> : Menampilkan jam realtime (WIB)<br>
+                <code>@tanggal1</code> : Menampilkan tanggal format MM/DD/YYYY<br>
+                <code>@tanggal2</code> : Menampilkan tanggal format Bulan DD, YYYY<br>
+                <code>@botname</code> : Menampilkan Nama Bot dari setting di atas<br>
+                <code>@storename</code> : Menampilkan Nama Store dari setting di atas
+            </div>`;
+    },
+    async _waSaveSettings(){
+        const ownerNumber=document.getElementById('waSetOwner').value.replace(/[^0-9]/g,'');
+        const botName=document.getElementById('waSetBot').value;
+        const storeName=document.getElementById('waSetStore').value;
+        const btn=document.getElementById('waSetBtn');
+        btn.disabled=true; btn.textContent='Menyimpan...';
+        const r=await UserAuth.apiFetch('/api/user/wa/settings',{method:'POST',body:JSON.stringify({ownerNumber,botName,storeName})});
+        btn.disabled=false; btn.textContent='Simpan Pengaturan';
+        if(r?.success) Toast.success('Pengaturan Bot disimpan!');
+        else Toast.error(r?.message||'Gagal menyimpan pengaturan');
     },
     _waShowGroupSend(gid,name){
         const el=document.getElementById('waGroupList');

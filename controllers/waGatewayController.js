@@ -237,10 +237,10 @@ const listCommands = async (req, res) => {
 
 const createCommand = async (req, res) => {
     try {
-        const { trigger, response, type } = req.body;
+        const { trigger, response, type, permissions } = req.body;
         if (!trigger || !response) return sendResponse(res, 400, false, 'Trigger dan response wajib diisi.');
 
-        const commands = await wa.addCommand(req.user.userId, trigger, response, type || 'exact');
+        const commands = await wa.addCommand(req.user.userId, trigger, response, type || 'exact', permissions || {});
         return sendResponse(res, 200, true, 'Command berhasil ditambahkan.', commands);
     } catch (err) {
         return sendResponse(res, 500, false, 'Gagal menambahkan command.');
@@ -249,10 +249,10 @@ const createCommand = async (req, res) => {
 
 const editCommand = async (req, res) => {
     try {
-        const { trigger, response, type } = req.body;
+        const { trigger, response, type, permissions } = req.body;
         if (!trigger || !response) return sendResponse(res, 400, false, 'Trigger dan response wajib diisi.');
 
-        const commands = await wa.updateCommand(req.user.userId, req.params.id, trigger, response, type || 'exact');
+        const commands = await wa.updateCommand(req.user.userId, req.params.id, trigger, response, type || 'exact', permissions || {});
         if (!commands) return sendResponse(res, 404, false, 'Command tidak ditemukan.');
         return sendResponse(res, 200, true, 'Command berhasil diupdate.', commands);
     } catch (err) {
@@ -281,6 +281,24 @@ const getWaLogs = async (req, res) => {
     }
 };
 
+const getSettings = async (req, res) => {
+    try {
+        const settings = await wa.getSettings(req.user.userId);
+        return sendResponse(res, 200, true, 'OK', settings);
+    } catch (err) {
+        return sendResponse(res, 500, false, 'Gagal memuat settings.');
+    }
+};
+
+const saveSettings = async (req, res) => {
+    try {
+        const settings = await wa.saveSettings(req.user.userId, req.body);
+        return sendResponse(res, 200, true, 'Settings berhasil disimpan.', settings);
+    } catch (err) {
+        return sendResponse(res, 500, false, 'Gagal menyimpan settings.');
+    }
+};
+
 module.exports = {
     getStatus,
     connect,
@@ -295,5 +313,7 @@ module.exports = {
     createCommand,
     editCommand,
     removeCommand,
-    getWaLogs
+    getWaLogs,
+    getSettings,
+    saveSettings
 };

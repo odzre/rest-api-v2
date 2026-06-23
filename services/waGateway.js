@@ -61,8 +61,20 @@ function getSessionPath(userId) {
 const redisKey = {
     commands: (userId) => `wa:commands:${userId}`,
     logs: (userId) => `wa:logs:${userId}`,
-    status: (userId) => `wa:status:${userId}`
+    status: (userId) => `wa:status:${userId}`,
+    settings: (userId) => `wa:settings:${userId}`
 };
+
+// ==========================================
+// SETTINGS CRUD (Redis)
+// ==========================================
+async function getWaSettings(userId) {
+    return await getJSON(redisKey.settings(userId)) || { botName: '', storeName: '', ownerNumber: '' };
+}
+
+async function saveWaSettings(userId, settings) {
+    await setJSON(redisKey.settings(userId), settings);
+}
 
 // ==========================================
 // COMMANDS CRUD (Redis)
@@ -75,19 +87,19 @@ async function saveCommands(userId, commands) {
     await setJSON(redisKey.commands(userId), commands);
 }
 
-async function addCommand(userId, trigger, response, type = 'exact') {
+async function addCommand(userId, trigger, response, type = 'exact', permissions = {}) {
     const commands = await getCommands(userId);
     const id = Date.now().toString(36);
-    commands.push({ id, trigger: trigger.toLowerCase(), response, type, createdAt: new Date().toISOString() });
+    commands.push({ id, trigger: trigger.toLowerCase(), response, type, permissions, createdAt: new Date().toISOString() });
     await saveCommands(userId, commands);
     return commands;
 }
 
-async function updateCommand(userId, cmdId, trigger, response, type) {
+async function updateCommand(userId, cmdId, trigger, response, type, permissions = {}) {
     const commands = await getCommands(userId);
     const idx = commands.findIndex(c => c.id === cmdId);
     if (idx === -1) return null;
-    commands[idx] = { ...commands[idx], trigger: trigger.toLowerCase(), response, type };
+    commands[idx] = { ...commands[idx], trigger: trigger.toLowerCase(), response, type, permissions };
     await saveCommands(userId, commands);
     return commands;
 }
@@ -218,6 +230,26 @@ async function startSession(userId, onQR, onConnected, onDisconnected) {
 
         if (!text) return;
 
+        // Message info
+        const remoteJid = msg.key.remoteJid;
+        const isGroup = remoteJid.endsWith('@g.us');
+        const sender = msg.key.participant || remoteJid;
+        const senderNumber = sender.split('@')[0];
+        
+        // Load settings
+        const waSettings = await getWaSettings(userId);
+        
+        let isAdmin = false;
+        if (isGroup) {
+            try {
+                const groupMetadata = await sock.groupMetadata(remoteJid);
+                const participant = groupMetadata.participants.find(p => p.id === sender);
+                isAdmin = participant?.admin === 'admin' || participant?.admin === 'superadmin';
+            } catch (e) {}
+        }
+        
+        const isOwner = waSettings.ownerNumber ? sender.includes(waSettings.ownerNumber) : false;
+
         // Check auto-reply commands
         const commands = await getCommands(userId);
         const lowerText = text.toLowerCase().trim();
@@ -233,13 +265,49 @@ async function startSession(userId, onQR, onConnected, onDisconnected) {
             }
 
             if (match) {
+                // Check permissions
+                const p = cmd.permissions || {};
+                
+                // Where restrictions
+                if (p.isGroup && !isGroup) continue;
+                if (p.isPrivate && isGroup) continue;
+                
+                // Who restrictions (Public by default)
+                if (p.isOwner && !isOwner) continue;
+                if (p.isAdmin && isGroup && !isAdmin && !isOwner) continue;
+
                 try {
                     const subscribed = await hasActiveSubscription(userId);
-                    const replyText = appendCredit(cmd.response, subscribed);
-                    await sock.sendMessage(msg.key.remoteJid, { text: replyText });
+                    let replyText = cmd.response;
+                    
+                    // Variables Replacement
+                    const now = new Date();
+                    const formatter = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' });
+                    
+                    const d = now.getDate();
+                    const m = now.getMonth() + 1;
+                    const y = now.getFullYear();
+                    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                    
+                    replyText = replyText.replace(/@jam/g, formatter.format(now));
+                    replyText = replyText.replace(/@tanggal1/g, `${m.toString().padStart(2, '0')}/${d.toString().padStart(2, '0')}/${y}`);
+                    replyText = replyText.replace(/@tanggal2/g, `${months[now.getMonth()]} ${d}, ${y}`);
+                    
+                    if (waSettings.botName) replyText = replyText.replace(/@botname/g, waSettings.botName);
+                    if (waSettings.storeName) replyText = replyText.replace(/@storename/g, waSettings.storeName);
+                    
+                    const hasUserMentions = replyText.includes('@user');
+                    if (hasUserMentions) replyText = replyText.replace(/@user/g, `@${senderNumber}`);
+                    
+                    replyText = appendCredit(replyText, subscribed);
+                    
+                    const sendOptions = { text: replyText };
+                    if (hasUserMentions) sendOptions.mentions = [sender];
+                    
+                    await sock.sendMessage(remoteJid, sendOptions);
                     await addLog(userId, {
                         direction: 'auto-reply',
-                        to: msg.key.remoteJid,
+                        to: remoteJid,
                         trigger: cmd.trigger,
                         message: cmd.response.substring(0, 100),
                         status: 'sent'
@@ -431,5 +499,7 @@ module.exports = {
     updateCommand,
     deleteCommand,
     getLogs,
-    sessions
+    sessions,
+    getWaSettings,
+    saveWaSettings
 };
