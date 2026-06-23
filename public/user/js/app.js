@@ -806,8 +806,22 @@ const App={
 
     // ALIGHT MOTION
     _amEmail: '',
-    renderAlightMotion(){
+    async renderAlightMotion(){
         const el=document.getElementById('pageContent');
+        el.innerHTML='<div class="skeleton" style="height:200px"></div>';
+        // Check feature access
+        const check=await UserAuth.apiFetch('/api/user/profile');
+        if(check?.success){
+            const u=check.data;
+            if(!u.features||!u.features.allow_alight_motion){
+                el.innerHTML=`<div class="page-content"><div class="stat-card-wide"><div class="stat-label">AKSES DITOLAK</div><div class="stat-value" style="font-size:18px;color:var(--red)">Fitur Tidak Tersedia</div><div class="stat-sub">Fitur Alight Motion tidak tersedia di paket langganan Anda.</div></div><div class="settings-section"><p style="color:var(--text-muted)">Upgrade paket langganan Anda untuk mengakses fitur ini.</p><button class="btn btn-primary" onclick="App.navigate('langganan')" style="margin-top:12px">Lihat Paket</button></div></div>`;
+                return;
+            }
+            if(u.subscriptionPlanId && u.subscriptionExpiresAt && new Date(u.subscriptionExpiresAt)<new Date()){
+                el.innerHTML=`<div class="page-content"><div class="stat-card-wide"><div class="stat-label">LANGGANAN EXPIRED</div><div class="stat-value" style="font-size:18px;color:var(--red)">Langganan Tidak Aktif</div><div class="stat-sub">Langganan Anda telah berakhir. Perpanjang untuk menggunakan fitur ini.</div></div><div class="settings-section"><button class="btn btn-primary" onclick="App.navigate('langganan')" style="margin-top:12px">Perpanjang Langganan</button></div></div>`;
+                return;
+            }
+        }
         el.innerHTML=`<div style="max-width:600px">
             <div class="settings-section">
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
