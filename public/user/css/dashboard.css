@@ -362,9 +362,6 @@ a, button, input, select, textarea, .nav-item, .btn, .stat-card, .feature-card, 
     .table-container table { min-width: 600px; }
     .table-scroll-wrapper { margin: 0 -1px; }
 }
-@media (min-width: 769px) {
-    .menu-btn { display: none; }
-}
 
 /* DIGIFLAZZ TERMINAL LOG */
 .digi-terminal { background: #0d1117; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; font-family: var(--font-mono); font-size: 12px; line-height: 1.7; max-height: 400px; overflow-y: auto; color: #c9d1d9; }
