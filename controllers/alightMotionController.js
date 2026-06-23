@@ -34,13 +34,16 @@ const sendVerification = async (req, res) => {
         const data = await resp.json();
 
         if (data.status) {
+            console.log(`[AlightMotion] Send OK: email=${email}`);
             return sendResponse(res, 200, true, data.result?.message || 'Link verifikasi berhasil dikirim.', {
                 email: data.result?.email || email,
                 type: data.result?.type,
                 usage: data.result?.usage,
             });
         } else {
-            return sendResponse(res, 400, false, data.result?.message || data.message || 'Gagal mengirim verifikasi.');
+            const errMsg = data.result?.message || data.message || 'Gagal mengirim verifikasi.';
+            console.error(`[AlightMotion] Send GAGAL: email=${email} | HTTP=${resp.status} | msg=${errMsg} | raw=${JSON.stringify(data)}`);
+            return sendResponse(res, 400, false, errMsg);
         }
     } catch (err) {
         console.error('[AlightMotion] Send error:', err.message);
@@ -65,6 +68,7 @@ const verifyAccount = async (req, res) => {
         const data = await resp.json();
 
         if (data.status) {
+            console.log(`[AlightMotion] Verif OK: email=${email}`);
             return sendResponse(res, 200, true, data.result?.message || 'Verifikasi berhasil!', {
                 email: data.result?.email || email,
                 type: data.result?.type,
@@ -72,7 +76,9 @@ const verifyAccount = async (req, res) => {
                 usage: data.result?.usage,
             });
         } else {
-            return sendResponse(res, 400, false, data.result?.message || data.message || 'Verifikasi gagal.');
+            const errMsg = data.result?.message || data.message || 'Verifikasi gagal.';
+            console.error(`[AlightMotion] Verif GAGAL: email=${email} | HTTP=${resp.status} | msg=${errMsg} | raw=${JSON.stringify(data)}`);
+            return sendResponse(res, 400, false, errMsg);
         }
     } catch (err) {
         console.error('[AlightMotion] Verif error:', err.message);
