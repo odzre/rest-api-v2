@@ -469,21 +469,6 @@
                         <div class="stat-value" id="stat-volume">0</div>
                     </div>
                 </div>
-
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-title">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                            Total Perputaran Uang
-                        </div>
-                        <div class="live-badge">
-                            <div class="live-dot"></div> Live
-                        </div>
-                    </div>
-                    <div class="stat-body">
-                        <div class="stat-value" id="stat-nominal">Rp 0</div>
-                    </div>
-                </div>
             </div>
 
         </section>
@@ -659,38 +644,30 @@
         /* LIVE STATS - REAL DATA FROM API */
         let liveTransactions = 0;
         let liveVolume = 0;
-        let liveNominal = 0;
 
         async function fetchLiveStats() {
             try {
                 const res = await fetch('/api/public/live-stats');
                 const data = await res.json();
                 if (data.success) {
-                    const newTx = data.data.transactions_today || 0;
+                    const newTx = data.data.daily_nominal || 0;
                     const newVol = data.data.volume_today || 0;
-                    const newNominal = data.data.total_nominal || 0;
                     
                     // Animate only if changed
-                    if (newTx !== liveTransactions || newVol !== liveVolume || newNominal !== liveNominal) {
+                    if (newTx !== liveTransactions || newVol !== liveVolume) {
                         liveTransactions = newTx;
                         liveVolume = newVol;
-                        liveNominal = newNominal;
                         
                         const txEl = document.getElementById('stat-transactions');
                         const volEl = document.getElementById('stat-volume');
-                        const nomEl = document.getElementById('stat-nominal');
                         
-                        txEl.textContent = liveTransactions.toLocaleString('id-ID');
+                        txEl.textContent = 'Rp ' + liveTransactions.toLocaleString('id-ID');
                         volEl.textContent = liveVolume.toLocaleString('id-ID');
-                        if (nomEl) nomEl.textContent = 'Rp ' + liveNominal.toLocaleString('id-ID');
                         
                         txEl.style.animation = 'none'; volEl.style.animation = 'none';
-                        if (nomEl) nomEl.style.animation = 'none';
                         txEl.offsetHeight; volEl.offsetHeight;
-                        if (nomEl) nomEl.offsetHeight;
                         txEl.style.animation = 'number-bump 0.4s ease-out forwards';
                         volEl.style.animation = 'number-bump 0.4s ease-out forwards';
-                        if (nomEl) nomEl.style.animation = 'number-bump 0.4s ease-out forwards';
                     }
                 }
             } catch (e) { /* silent fail */ }

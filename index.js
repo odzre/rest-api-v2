@@ -54,15 +54,16 @@ app.get('/api/public/live-stats', async (req, res) => {
         const total = await db.getOne(
             "SELECT COUNT(*) as total_count FROM request_logs"
         );
-        const globalVolRow = await db.getOne(
-            "SELECT `value` FROM settings WHERE `key` = 'global_transaction_volume'"
+        const dateKey = `volume_${new Date().toISOString().split('T')[0]}`;
+        const dailyVolRow = await db.getOne(
+            "SELECT `value` FROM settings WHERE `key` = ?", [dateKey]
         );
         res.json({
             success: true,
             data: {
                 transactions_today: today?.tx_count || 0,
                 volume_today: total?.total_count || 0,
-                total_nominal: globalVolRow && globalVolRow.value ? parseInt(globalVolRow.value, 10) : 0
+                daily_nominal: dailyVolRow && dailyVolRow.value ? parseInt(dailyVolRow.value, 10) : 0
             }
         });
     } catch (err) {

@@ -156,11 +156,22 @@ async function handlePaid(reffid, order, txData) {
     console.log(`[Order] ✅ PAID: ${reffid} - Rp${order.nominal}`);
 
     try {
-        const row = await db.getOne("SELECT `value` FROM settings WHERE `key` = 'global_transaction_volume'");
+        const dateKey = `volume_${new Date().toISOString().split('T')[0]}`;
+        
+        // Update global volume
+        const rowG = await db.getOne("SELECT `value` FROM settings WHERE `key` = 'global_transaction_volume'");
         let currentVol = 0;
-        if (row && row.value) currentVol = parseInt(row.value, 10) || 0;
+        if (rowG && rowG.value) currentVol = parseInt(rowG.value, 10) || 0;
         const newVol = currentVol + parseInt(order.nominal, 10);
         await db.run("INSERT INTO settings (`key`, `value`) VALUES ('global_transaction_volume', ?) ON DUPLICATE KEY UPDATE `value` = ?", [newVol.toString(), newVol.toString()]);
+        
+        // Update daily volume
+        const rowD = await db.getOne("SELECT `value` FROM settings WHERE `key` = ?", [dateKey]);
+        let dailyVol = 0;
+        if (rowD && rowD.value) dailyVol = parseInt(rowD.value, 10) || 0;
+        const newDailyVol = dailyVol + parseInt(order.nominal, 10);
+        await db.run("INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?", [dateKey, newDailyVol.toString(), newDailyVol.toString()]);
+        
     } catch (e) {
         console.error('[GlobalVolume] failed to update', e.message);
     }
