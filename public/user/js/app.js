@@ -547,24 +547,25 @@ const App={
     },
     _renderWaTabs(el){
         const s=this._waStatus;
-        const tabs=['koneksi','pesan','commands','grup','pengaturan'];
+        const tabs=['consol','settings_bot','broadcast'];
         el.innerHTML=`<div class="page-content">
-            <div class="wa-tabs">${tabs.map(t=>`<button class="wa-tab${this._waTab===t?' active':''}" onclick="App._waTab='${t}';App._renderWaTabs(document.getElementById('pageContent'))">${t==='koneksi'?'Koneksi':t==='pesan'?'Pesan':t==='commands'?'Commands':t==='grup'?'Grup':t==='pengaturan'?'Pengaturan Bot':t}</button>`).join('')}</div>
+            <div class="wa-tabs">${tabs.map(t=>`<button class="wa-tab${this._waTab===t?' active':''}" onclick="App._waTab='${t}';App._renderWaTabs(document.getElementById('pageContent'))">${t==='consol'?'Consol':t==='settings_bot'?'Settings Bot':'Broadcast'}</button>`).join('')}</div>
             <div id="waTabContent"></div>
         </div>`;
         this['_waTab_'+this._waTab]();
     },
 
-    // TAB: KONEKSI
-    _waTab_koneksi(){
+    // TAB: CONSOL
+    _waTab_consol(){
         const s=this._waStatus;const el=document.getElementById('waTabContent');
+        let html='';
         if(s.connected){
-            el.innerHTML=`<div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">STATUS</div><div class="stat-value" style="font-size:18px;color:var(--green)">Terhubung</div><div class="stat-sub">${s.phoneNumber||''} ${s.name?'('+s.name+')':''}</div></div><button class="btn btn-danger btn-sm" onclick="App._waDisconnect()">Disconnect</button></div></div>`;
+            html=`<div class="stat-card-wide"><div style="display:flex;align-items:center;justify-content:space-between"><div><div class="stat-label">STATUS</div><div class="stat-value" style="font-size:18px;color:var(--green)">Terhubung</div><div class="stat-sub">${s.phoneNumber||''} ${s.name?'('+s.name+')':''}</div></div><button class="btn btn-danger btn-sm" onclick="App._waDisconnect()">Disconnect</button></div></div>`;
         } else if(s.status==='saved'){
-            el.innerHTML=`<div class="stat-card-wide"><div class="stat-label">STATUS</div><div class="stat-value" style="font-size:18px;color:var(--accent-light)">Session Tersimpan</div><div class="stat-sub">Klik reconnect untuk menghubungkan kembali</div></div>
+            html=`<div class="stat-card-wide"><div class="stat-label">STATUS</div><div class="stat-value" style="font-size:18px;color:var(--accent-light)">Session Tersimpan</div><div class="stat-sub">Klik reconnect untuk menghubungkan kembali</div></div>
             <div class="settings-section"><button class="btn btn-primary" onclick="App._waConnect()">Reconnect</button> <button class="btn btn-danger" onclick="App._waDisconnect()">Hapus Session</button></div>`;
         } else {
-            el.innerHTML=`<div class="stat-card-wide"><div class="stat-label">STATUS</div><div class="stat-value" style="font-size:18px;color:var(--red)">Belum Terhubung</div></div>
+            html=`<div class="stat-card-wide"><div class="stat-label">STATUS</div><div class="stat-value" style="font-size:18px;color:var(--red)">Belum Terhubung</div></div>
             <div class="settings-section">
                 <div class="section-title">${IC.shield} Hubungkan WhatsApp</div>
                 <div class="wa-connect-tabs"><button class="wa-tab active" id="waQrTab" onclick="App._waShowQrMode()">QR Code</button><button class="wa-tab" id="waPairTab" onclick="App._waShowPairMode()">Pairing Code</button></div>
@@ -575,6 +576,9 @@ const App={
                 </div>
             </div>`;
         }
+        html+=`<div class="section-title" style="margin-top:24px">${IC.chart} Console Logs</div><div id="waLogList"><div class="skeleton" style="height:80px"></div></div>`;
+        el.innerHTML=html;
+        this._loadWaLogs();
     },
     _waShowQrMode(){
         document.getElementById('waQrTab').classList.add('active');document.getElementById('waPairTab').classList.remove('active');
@@ -620,41 +624,35 @@ const App={
         Toast.success('WhatsApp terputus.');this._waStatus={connected:false,status:'none'};this._renderWaTabs(document.getElementById('pageContent'));
     },
 
-    // TAB: PESAN
-    _waTab_pesan(){
+    // TAB: BROADCAST
+    async _waTab_broadcast(){
         const el=document.getElementById('waTabContent');
-        if(!this._waStatus.connected){el.innerHTML='<div class="empty-state"><p>Hubungkan WhatsApp terlebih dahulu di tab Koneksi.</p></div>';return;}
+        if(!this._waStatus.connected){el.innerHTML='<div class="empty-state"><p>Hubungkan WhatsApp terlebih dahulu di tab Consol.</p></div>';return;}
+        el.innerHTML='<div class="skeleton" style="height:200px"></div>';
+        const r=await UserAuth.apiFetch('/api/user/wa/groups');
+        const groups=r?.data||[];
+        
         el.innerHTML=`
-            <div class="section-title">${IC.shield} Kirim Pesan</div>
+            <div class="section-title">${IC.chart} Broadcast Grup</div>
             <div class="settings-section">
-                <div class="form-group"><label class="form-label">Nomor Tujuan</label><input class="form-input" id="waSendTo" placeholder="628xxxxxxxxxx"></div>
-                <div class="form-group"><label class="form-label">Pesan</label><textarea class="form-input" id="waSendMsg" rows="3" placeholder="Tulis pesan..."></textarea></div>
-                <button class="btn btn-primary" onclick="App._waSend()" id="waSendBtn">Kirim</button>
-            </div>
-            <div class="section-title" style="margin-top:24px">${IC.chart} Broadcast</div>
-            <div class="settings-section">
-                <div class="form-group"><label class="form-label">Nomor Tujuan <span style="color:var(--text-muted);font-weight:400">(1 nomor per baris)</span></label><textarea class="form-input" id="waBcNumbers" rows="4" placeholder="628111\n628222\n628333"></textarea></div>
-                <div class="form-group"><label class="form-label">Pesan</label><textarea class="form-input" id="waBcMsg" rows="3" placeholder="Tulis pesan broadcast..."></textarea></div>
+                <div class="form-group"><label class="form-label">Pilih Grup Tujuan</label>
+                    <div style="max-height:200px;overflow-y:auto;background:var(--bg-secondary);padding:12px;border-radius:8px;border:1px solid var(--border)">
+                        ${groups.length===0?'<div style="color:var(--text-muted)">Tidak ada grup ditemukan. Pastikan bot sudah join grup.</div>':
+                          groups.map(g=>`<label style="display:flex;align-items:center;margin-bottom:8px;cursor:pointer"><input type="checkbox" class="bc-group-cb" value="${g.id}" style="margin-right:8px;width:16px;height:16px"> <strong>${g.subject}</strong> <span style="font-size:12px;color:var(--text-muted);margin-left:8px">(${g.participants} member)</span></label>`).join('')}
+                    </div>
+                </div>
+                <div class="form-group"><label class="form-label">Pesan</label><textarea class="form-input" id="waBcMsg" rows="4" placeholder="Tulis pesan broadcast..."></textarea></div>
                 <div class="form-group"><label class="form-label">Delay (detik)</label><input class="form-input" id="waBcDelay" type="number" value="3" min="1" max="30" style="max-width:120px"></div>
                 <button class="btn btn-primary" onclick="App._waBroadcast()" id="waBcBtn">Kirim Broadcast</button>
                 <div id="waBcLog" style="display:none;margin-top:16px"><div class="digi-terminal" id="waBcTerminal"></div></div>
-            </div>
-            <div class="section-title" style="margin-top:24px">${IC.chart} Log Terkirim</div>
-            <div id="waLogList"><div class="skeleton" style="height:80px"></div></div>`;
-        this._loadWaLogs();
-    },
-    async _waSend(){
-        const to=document.getElementById('waSendTo').value.trim();const msg=document.getElementById('waSendMsg').value;
-        if(!to||!msg)return Toast.error('Nomor dan pesan wajib diisi!');
-        const btn=document.getElementById('waSendBtn');btn.disabled=true;btn.textContent='Mengirim...';
-        const r=await UserAuth.apiFetch('/api/user/wa/send',{method:'POST',body:JSON.stringify({to,message:msg})});
-        btn.disabled=false;btn.textContent='Kirim';
-        if(r?.success){Toast.success('Pesan terkirim!');document.getElementById('waSendMsg').value='';this._loadWaLogs();}else Toast.error(r?.message||'Gagal');
+            </div>`;
     },
     async _waBroadcast(){
-        const nums=document.getElementById('waBcNumbers').value.trim().split('\n').map(n=>n.trim()).filter(Boolean);
+        const cbs=document.querySelectorAll('.bc-group-cb:checked');
+        const nums=Array.from(cbs).map(cb=>cb.value);
         const msg=document.getElementById('waBcMsg').value;const delay=document.getElementById('waBcDelay').value;
-        if(!nums.length||!msg)return Toast.error('Nomor dan pesan wajib diisi!');
+        if(!nums.length)return Toast.error('Pilih minimal 1 grup!');
+        if(!msg)return Toast.error('Pesan wajib diisi!');
         document.getElementById('waBcLog').style.display='block';
         const term=document.getElementById('waBcTerminal');term.innerHTML='';
         document.getElementById('waBcBtn').disabled=true;
@@ -671,7 +669,7 @@ const App={
                 }
             }
         }catch(e){term.innerHTML+=`<div class="log-line log-error">Error: ${e.message}</div>`;}
-        document.getElementById('waBcBtn').disabled=false;this._loadWaLogs();
+        document.getElementById('waBcBtn').disabled=false;
     },
     async _loadWaLogs(){
         const r=await UserAuth.apiFetch('/api/user/wa/logs');const el=document.getElementById('waLogList');
@@ -684,24 +682,51 @@ const App={
         }).join('')}</div>`;
     },
 
-    // TAB: COMMANDS
-    _waTab_commands(){
+    // TAB: SETTINGS BOT
+    async _waTab_settings_bot(){
         const el=document.getElementById('waTabContent');
-        if(!this._waStatus.connected){el.innerHTML='<div class="empty-state"><p>Hubungkan WhatsApp terlebih dahulu.</p></div>';return;}
-        el.innerHTML=`<div class="section-title">${IC.shield} Auto-Reply Commands</div>
+        el.innerHTML='<div class="skeleton" style="height:200px"></div>';
+        const r=await UserAuth.apiFetch('/api/user/wa/settings');
+        const s=r?.data||{};
+        el.innerHTML=`
+            <div class="section-title">${IC.settings} Identitas Bot</div>
+            <div class="settings-section">
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Nomor Owner (Awalan 62)</label><input class="form-input" id="waSetOwnerNum" value="${s.ownerNumber||''}" placeholder="628123456789"></div>
+                    <div class="form-group"><label class="form-label">Nama Owner (@ownername)</label><input class="form-input" id="waSetOwnerName" value="${s.ownerName||''}" placeholder="Odzre"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Nama Bot (@botname)</label><input class="form-input" id="waSetBot" value="${s.botName||''}" placeholder="Misal: Si Bot Keren"></div>
+                    <div class="form-group"><label class="form-label">Nama Store (@storename)</label><input class="form-input" id="waSetStore" value="${s.storeName||''}" placeholder="Misal: Odzre Store"></div>
+                </div>
+            </div>
+            <div class="section-title" style="margin-top:24px">${IC.document} Template Plugin Bot</div>
+            <div class="settings-section">
+                <div class="info-alert" style="margin-bottom:16px;background:var(--bg-secondary);padding:16px;border-radius:12px">
+                    <strong style="color:var(--accent-light)">💡 Variabel Tersedia:</strong><br><br>
+                    <code>@user</code> : Nama/nomor pentrigger, <code>@jam</code> : Jam realtime, <code>@tanggal1</code> : MM/DD/YYYY, <code>@tanggal2</code> : DD MMMM YYYY<br>
+                    <code>@namagroup</code> : Nama grup saat ini, <code>@groupjoin</code> : Total grup bot, <code>@cmdmenu</code> : List command (khusus menu)<br>
+                    <code>@list</code> : Daftar list yg tersimpan (khusus menu list)
+                </div>
+                <div class="form-group"><label class="form-label">Template .menu / .allmenu</label><textarea class="form-input" id="waSetMenu" rows="6" placeholder="Ketik template menu...">${s.menuTemplate||''}</textarea></div>
+                <div class="form-group"><label class="form-label">Template Pesanan Proses (.proses)</label><textarea class="form-input" id="waSetProses" rows="3" placeholder="Pesanan atas nama @user sedang diproses...">${s.prosesTemplate||''}</textarea></div>
+                <div class="form-group"><label class="form-label">Template Pesanan Selesai (.done)</label><textarea class="form-input" id="waSetDone" rows="3" placeholder="Pesanan @user sudah selesai!">${s.doneTemplate||''}</textarea></div>
+                <div class="form-group"><label class="form-label">Template Welcome Grup</label><textarea class="form-input" id="waSetWelcome" rows="3" placeholder="Selamat datang @user di grup @namagroup!">${s.welcomeTemplate||''}</textarea></div>
+                <div class="form-group"><label class="form-label">Template Goodbye Grup</label><textarea class="form-input" id="waSetGoodbye" rows="3" placeholder="Selamat tinggal @user dari @namagroup...">${s.goodbyeTemplate||''}</textarea></div>
+                <button class="btn btn-primary" onclick="App._waSaveSettings()" id="waSetBtn">Simpan Semua Pengaturan</button>
+            </div>
+            <div class="section-title" style="margin-top:24px">${IC.shield} Custom Commands Tambahan</div>
             <div class="settings-section">
                 <button class="btn btn-primary btn-sm" onclick="App._waShowAddCmd()">Tambah Command</button>
                 <div id="waCmdForm" style="display:none;margin-top:16px;background:var(--bg-secondary);padding:16px;border-radius:12px">
                     <div class="form-group"><label class="form-label">Trigger</label><input class="form-input" id="waCmdTrigger" placeholder=".harga"></div>
                     <div class="form-group"><label class="form-label">Tipe Matching</label><select class="form-input" id="waCmdType"><option value="exact">Exact Match</option><option value="startswith">Starts With</option><option value="contains">Contains</option></select></div>
-                    
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
                         <div class="form-group" style="margin-bottom:0"><label class="form-label">Akses Pengguna</label><select class="form-input" id="waCmdPermWho"><option value="public">Semua User (Public)</option><option value="owner">Hanya Owner</option><option value="admin">Hanya Admin Grup</option></select></div>
                         <div class="form-group" style="margin-bottom:0"><label class="form-label">Lokasi Chat</label><select class="form-input" id="waCmdPermWhere"><option value="all">Semua Tempat</option><option value="group">Hanya di Grup</option><option value="private">Hanya di Private Chat</option></select></div>
                     </div>
-                    
-                    <div class="form-group"><label class="form-label">Response (Bisa pakai @user, @jam, @tanggal1, @tanggal2, @botname, @storename)</label><textarea class="form-input" id="waCmdResponse" rows="4" placeholder="Balasan otomatis..."></textarea></div>
-                    <button class="btn btn-primary btn-sm" onclick="App._waSaveCmd()" id="waCmdSaveBtn">Simpan</button>
+                    <div class="form-group"><label class="form-label">Response</label><textarea class="form-input" id="waCmdResponse" rows="4" placeholder="Balasan otomatis..."></textarea></div>
+                    <button class="btn btn-primary btn-sm" onclick="App._waSaveCmd()" id="waCmdSaveBtn">Simpan Command</button>
                     <button class="btn btn-sm" onclick="document.getElementById('waCmdForm').style.display='none'" style="margin-left:8px;background:var(--bg-card)">Batal</button>
                     <input type="hidden" id="waCmdEditId">
                 </div>
@@ -739,69 +764,23 @@ const App={
         }).join('')}</tbody></table>`;
     },
 
-    // TAB: GRUP
-    _waTab_grup(){
-        const el=document.getElementById('waTabContent');
-        if(!this._waStatus.connected){el.innerHTML='<div class="empty-state"><p>Hubungkan WhatsApp terlebih dahulu.</p></div>';return;}
-        el.innerHTML=`<div class="section-title">${IC.chart} Daftar Grup</div><div id="waGroupList"><div class="skeleton" style="height:100px"></div></div>`;
-        this._loadWaGroups();
-    },
-    async _loadWaGroups(){
-        const r=await UserAuth.apiFetch('/api/user/wa/groups');const el=document.getElementById('waGroupList');
-        if(!r?.success||!r.data?.length){el.innerHTML='<div class="empty-state" style="padding:16px"><p>Tidak ada grup.</p></div>';return;}
-        el.innerHTML=r.data.map(g=>`<div class="wa-group-card">
-            <div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${g.subject}</strong><div style="font-size:12px;color:var(--text-muted)">${g.participants} anggota</div></div>
-            <button class="btn btn-primary btn-sm" onclick="App._waShowGroupSend('${g.id}','${g.subject.replace(/'/g,"\\'")}')">Kirim Pesan</button></div>
-        </div>`).join('');
-    },
-    
-    // TAB: PENGATURAN
-    async _waTab_pengaturan(){
-        const el=document.getElementById('waTabContent');
-        el.innerHTML='<div class="skeleton" style="height:200px"></div>';
-        const r=await UserAuth.apiFetch('/api/user/wa/settings');
-        const s=r?.data||{botName:'',storeName:'',ownerNumber:''};
-        el.innerHTML=`<div class="section-title">${IC.settings} Pengaturan Bot Global</div>
-            <div class="settings-section">
-                <div class="form-group"><label class="form-label">Nomor Owner (Gunakan awalan 62)</label><input class="form-input" id="waSetOwner" value="${s.ownerNumber}" placeholder="628123456789"></div>
-                <div class="form-group"><label class="form-label">Nama Bot (Variabel: @botname)</label><input class="form-input" id="waSetBot" value="${s.botName}" placeholder="Misal: Si Bot Keren"></div>
-                <div class="form-group"><label class="form-label">Nama Store / Toko (Variabel: @storename)</label><input class="form-input" id="waSetStore" value="${s.storeName}" placeholder="Misal: Odzre Store"></div>
-                <button class="btn btn-primary" onclick="App._waSaveSettings()" id="waSetBtn">Simpan Pengaturan</button>
-            </div>
-            <div class="info-alert" style="margin-top:16px;background:var(--bg-secondary);padding:16px;border-radius:12px">
-                <strong style="color:var(--accent-light)">💡 Variabel Tersedia untuk Response Command:</strong><br><br>
-                <code>@user</code> : Tag / Mention pengguna yang mengirim pesan<br>
-                <code>@jam</code> : Menampilkan jam realtime (WIB)<br>
-                <code>@tanggal1</code> : Menampilkan tanggal format MM/DD/YYYY<br>
-                <code>@tanggal2</code> : Menampilkan tanggal format Bulan DD, YYYY<br>
-                <code>@botname</code> : Menampilkan Nama Bot dari setting di atas<br>
-                <code>@storename</code> : Menampilkan Nama Store dari setting di atas
-            </div>`;
-    },
     async _waSaveSettings(){
-        const ownerNumber=document.getElementById('waSetOwner').value.replace(/[^0-9]/g,'');
+        const ownerNumber=document.getElementById('waSetOwnerNum').value.replace(/[^0-9]/g,'');
+        const ownerName=document.getElementById('waSetOwnerName').value;
         const botName=document.getElementById('waSetBot').value;
         const storeName=document.getElementById('waSetStore').value;
+        const menuTemplate=document.getElementById('waSetMenu').value;
+        const prosesTemplate=document.getElementById('waSetProses').value;
+        const doneTemplate=document.getElementById('waSetDone').value;
+        const welcomeTemplate=document.getElementById('waSetWelcome').value;
+        const goodbyeTemplate=document.getElementById('waSetGoodbye').value;
+        
         const btn=document.getElementById('waSetBtn');
         btn.disabled=true; btn.textContent='Menyimpan...';
-        const r=await UserAuth.apiFetch('/api/user/wa/settings',{method:'POST',body:JSON.stringify({ownerNumber,botName,storeName})});
-        btn.disabled=false; btn.textContent='Simpan Pengaturan';
+        const r=await UserAuth.apiFetch('/api/user/wa/settings',{method:'POST',body:JSON.stringify({ownerNumber,ownerName,botName,storeName,menuTemplate,prosesTemplate,doneTemplate,welcomeTemplate,goodbyeTemplate})});
+        btn.disabled=false; btn.textContent='Simpan Semua Pengaturan';
         if(r?.success) Toast.success('Pengaturan Bot disimpan!');
         else Toast.error(r?.message||'Gagal menyimpan pengaturan');
-    },
-    _waShowGroupSend(gid,name){
-        const el=document.getElementById('waGroupList');
-        el.innerHTML=`<div class="settings-section"><div class="section-title">Kirim ke: ${name}</div>
-            <div class="form-group"><textarea class="form-input" id="waGroupMsg" rows="3" placeholder="Tulis pesan..."></textarea></div>
-            <button class="btn btn-primary btn-sm" onclick="App._waSendToGroup('${gid}')" id="waGroupSendBtn">Kirim</button>
-            <button class="btn btn-sm" onclick="App._loadWaGroups()" style="margin-left:8px">Kembali</button></div>`;
-    },
-    async _waSendToGroup(gid){
-        const msg=document.getElementById('waGroupMsg').value;if(!msg)return Toast.error('Pesan wajib diisi!');
-        const btn=document.getElementById('waGroupSendBtn');btn.disabled=true;btn.textContent='Mengirim...';
-        const r=await UserAuth.apiFetch(`/api/user/wa/groups/${gid}/send`,{method:'POST',body:JSON.stringify({message:msg})});
-        btn.disabled=false;btn.textContent='Kirim';
-        if(r?.success){Toast.success('Pesan terkirim ke grup!');this._loadWaGroups();}else Toast.error(r?.message||'Gagal');
     },
 
     // PENGATURAN

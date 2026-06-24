@@ -5,8 +5,10 @@
 
 const path = require('path');
 const fs = require('fs');
-const { getJSON, setJSON, deleteKey, scanKeys, pushToList, getList } = require('../config/redis');
+const { deleteKey, getJSON, setJSON, pushToList, getList } = require('../config/redis');
 const db = require('../config/database');
+const { hasActiveSubscription: _hasActiveSubscription } = require('../library/orderService');
+const { handlePluginMessage, handleGroupParticipantsUpdate } = require('./waPlugins');
 
 // Credit watermark for non-subscribers
 const CREDIT_TEXT = '\n\n> tools.odzreshop.id';
@@ -62,7 +64,10 @@ const redisKey = {
     commands: (userId) => `wa:commands:${userId}`,
     logs: (userId) => `wa:logs:${userId}`,
     status: (userId) => `wa:status:${userId}`,
-    settings: (userId) => `wa:settings:${userId}`
+    settings: (userId) => `wa:settings:${userId}`,
+    pluginProses: (userId, groupId) => `wa:plugin:proses:${userId}:${groupId}`,
+    pluginList: (userId, groupId) => `wa:plugin:list:${userId}:${groupId}`,
+    pluginGroupSettings: (userId, groupId) => `wa:plugin:groupSettings:${userId}:${groupId}`
 };
 
 // ==========================================
@@ -75,6 +80,12 @@ async function getWaSettings(userId) {
 async function saveWaSettings(userId, settings) {
     await setJSON(redisKey.settings(userId), settings);
 }
+
+// ==========================================
+// PLUGIN DATA CRUD (Redis)
+// ==========================================
+async function getPluginData(key) { return await getJSON(key) || {}; }
+async function savePluginData(key, data) { await setJSON(key, data); }
 
 // ==========================================
 // COMMANDS CRUD (Redis)
@@ -217,6 +228,15 @@ async function startSession(userId, onQR, onConnected, onDisconnected) {
 
     sock.ev.on('creds.update', saveCreds);
 
+    // Handle group participants update (Welcome/Goodbye)
+    sock.ev.on('group-participants.update', async (update) => {
+        try {
+            await handleGroupParticipantsUpdate(sock, update, userId);
+        } catch (e) {
+            console.error('[WA Plugins] Group Update Error:', e);
+        }
+    });
+
     // Handle incoming messages for auto-reply
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         if (type !== 'notify') return;
@@ -229,6 +249,14 @@ async function startSession(userId, onQR, onConnected, onDisconnected) {
             '';
 
         if (!text) return;
+
+        // Execute Plugin Messages FIRST
+        try {
+            const handled = await handlePluginMessage(sock, msg, userId);
+            if (handled) return; // if plugin processed it, stop execution
+        } catch (e) {
+            console.error('[WA Plugins Error]', e);
+        }
 
         // Message info
         const remoteJid = msg.key.remoteJid;
@@ -500,6 +528,9 @@ module.exports = {
     deleteCommand,
     getLogs,
     sessions,
-    getWaSettings,
-    saveWaSettings
+    getSettings: getWaSettings,
+    saveSettings: saveWaSettings,
+    redisKey,
+    getPluginData,
+    savePluginData
 };
