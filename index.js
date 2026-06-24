@@ -91,6 +91,7 @@ app.use('/api/v5/gopay', gopayRoutes);
 app.use('/api/v5/orderkouta', orderkoutaRoutes);
 app.use('/api/v5/payment', paymentRoutes);
 app.use('/api/v5/whatsapp', require('./routes/waGatewayRoutes'));
+app.use('/api/v5/alight-motion', require('./routes/alightMotionRoutes'));
 // CekID routes mounted at /api/v5 — HARUS di bawah route spesifik agar /gopay, /orderkouta, /payment cocok duluan
 app.use('/api/v5', cekidRoutes);
 
@@ -132,7 +133,9 @@ const openApiSpec = {
         { name: 'GoPay Merchant', description: 'Login, verifikasi OTP, cek mutasi, dan order QRIS GoPay Merchant' },
         { name: 'OrderKuota', description: 'Login, verifikasi OTP, cek mutasi, dan order QRIS OrderKuota' },
         { name: 'Payment', description: 'Buat QRIS dinamis dari kode QRIS statis' },
-        { name: 'Cek ID Game', description: 'Cek username/nickname game dari User ID & Zone ID' }
+        { name: 'Cek ID Game', description: 'Cek username/nickname game dari User ID & Zone ID' },
+        { name: 'Alight Motion', description: 'Aktivasi akun premium Alight Motion melalui email' },
+        { name: 'WhatsApp Gateway', description: 'Kirim pesan via WhatsApp Gateway' }
     ],
     paths: {
         // ====== GOPAY MERCHANT ======
@@ -230,6 +233,45 @@ const openApiSpec = {
                     }
                 }}}},
                 responses: { '200': { description: 'Data mutasi QRIS berhasil diambil.' } }
+            }
+        },
+
+        // ====== ALIGHT MOTION ======
+        '/api/v5/alight-motion/send-email': {
+            get: {
+                tags: ['Alight Motion'], summary: 'Kirim Link Verifikasi',
+                description: 'Kirim link verifikasi akun premium ke email pengguna.',
+                parameters: [
+                    { name: 'email', in: 'query', required: true, schema: { type: 'string' }, description: 'Email akun Alight Motion pengguna' }
+                ],
+                responses: { '200': { description: 'Email terkirim, beserta instruksi.' } }
+            }
+        },
+        '/api/v5/alight-motion/verif': {
+            get: {
+                tags: ['Alight Motion'], summary: 'Verifikasi Akun',
+                description: 'Verifikasi link yang didapatkan pengguna di email.',
+                parameters: [
+                    { name: 'email', in: 'query', required: true, schema: { type: 'string' }, description: 'Email akun Alight Motion pengguna' },
+                    { name: 'link', in: 'query', required: true, schema: { type: 'string' }, description: 'Link verifikasi panjang dari email' }
+                ],
+                responses: { '200': { description: 'Verifikasi berhasil dan akun premium diaktifkan.' } }
+            }
+        },
+
+        // ====== WHATSAPP GATEWAY ======
+        '/api/v5/whatsapp/send-message': {
+            post: {
+                tags: ['WhatsApp Gateway'], summary: 'Kirim Pesan WhatsApp',
+                description: 'Kirim pesan teks ke nomor WhatsApp tujuan menggunakan nomor yang sudah terhubung di dashboard.',
+                requestBody: { required: true, content: { 'application/json': { schema: {
+                    type: 'object', required: ['to', 'message'],
+                    properties: {
+                        to: { type: 'string', example: '628xxxxxxxxxx', description: 'Nomor WhatsApp tujuan' },
+                        message: { type: 'string', example: 'Halo, ini pesan percobaan.', description: 'Isi pesan teks' }
+                    }
+                }}}},
+                responses: { '200': { description: 'Pesan berhasil dikirim.' }, '400': { description: 'Gagal mengirim pesan atau nomor tidak valid.' } }
             }
         },
 

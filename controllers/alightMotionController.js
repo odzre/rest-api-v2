@@ -39,6 +39,7 @@ const sendVerification = async (req, res) => {
                 email: data.result?.email || email,
                 type: data.result?.type,
                 usage: data.result?.usage,
+                instruksi: 'Cek kotak masuk atau spam email Anda. Salin link verifikasi yang diterima dari Alight Motion dan gunakan pada endpoint /verif.'
             });
         } else {
             const errMsg = data.result?.message || data.message || 'Gagal mengirim verifikasi.';
@@ -74,6 +75,7 @@ const verifyAccount = async (req, res) => {
                 type: data.result?.type,
                 duration: data.result?.duration,
                 usage: data.result?.usage,
+                instruksi: 'Akun Anda sekarang sudah berstatus Premium. Silakan login ke aplikasi Alight Motion menggunakan email tersebut atau refresh jika sudah login.'
             });
         } else {
             const errMsg = data.result?.message || data.message || 'Verifikasi gagal.';
