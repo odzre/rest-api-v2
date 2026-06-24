@@ -241,7 +241,7 @@ async function startSession(userId, onQR, onConnected, onDisconnected) {
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         if (type !== 'notify') return;
         const msg = messages[0];
-        if (!msg?.message || msg.key.fromMe) return;
+        if (!msg?.message) return;
 
         const text = msg.message?.conversation ||
             msg.message?.extendedTextMessage?.text ||
@@ -257,6 +257,9 @@ async function startSession(userId, onQR, onConnected, onDisconnected) {
         } catch (e) {
             console.error('[WA Plugins Error]', e);
         }
+
+        // Prevent auto-reply to self
+        if (msg.key.fromMe) return;
 
         // Message info
         const remoteJid = msg.key.remoteJid;
