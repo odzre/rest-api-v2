@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const amCtrl = require('../controllers/alightMotionController');
-const { verifyApiKey, requireFeature } = require('../middleware/auth');
+const verifyApiKey = require('../middleware/auth');
+const { requireFeature } = require('../middleware/featureCheck');
 
 // Gunakan auth API Key untuk public endpoint ini
 router.use(verifyApiKey);
