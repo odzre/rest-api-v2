@@ -1,10 +1,8 @@
-const { getPluginData, savePluginData, redisKey, getCommands, getWaSettings } = require('./waGateway');
-const moment = require('moment-timezone');
-
 /**
  * Handle incoming messages for plugins
  */
-async function handlePluginMessage(sock, msg, userId) {
+async function handlePluginMessage(sock, msg, userId, helpers) {
+    const { getPluginData, savePluginData, redisKey, getCommands, getWaSettings } = helpers;
     if (!msg.message) return false;
     
     // Extract text
@@ -63,10 +61,19 @@ async function handlePluginMessage(sock, msg, userId) {
     const replaceVars = async (template) => {
         if (!template) return '';
         let res = template;
+        
+        const now = new Date();
+        const getFormat = (options) => new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', ...options }).format(now);
+        
         res = res.replace(/@user/g, `@${sender.split('@')[0]}`);
-        res = res.replace(/@jam/g, moment().tz('Asia/Jakarta').format('HH:mm:ss'));
-        res = res.replace(/@tanggal1/g, moment().tz('Asia/Jakarta').format('MM/DD/YYYY'));
-        res = res.replace(/@tanggal2/g, moment().tz('Asia/Jakarta').format('D MMMM YYYY'));
+        res = res.replace(/@jam/g, getFormat({ hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\./g, ':'));
+        
+        const m = getFormat({ month: '2-digit' });
+        const d = getFormat({ day: '2-digit' });
+        const y = getFormat({ year: 'numeric' });
+        res = res.replace(/@tanggal1/g, `${m}/${d}/${y}`);
+        res = res.replace(/@tanggal2/g, getFormat({ day: 'numeric', month: 'long', year: 'numeric' }));
+        
         res = res.replace(/@namagroup/g, groupMetadata ? groupMetadata.subject : 'Grup');
         res = res.replace(/@botname/g, settings.botName || 'Bot');
         res = res.replace(/@storename/g, settings.storeName || 'Store');
@@ -253,7 +260,8 @@ async function handlePluginMessage(sock, msg, userId) {
 /**
  * Handle Welcome/Goodbye events
  */
-async function handleGroupParticipantsUpdate(sock, { id, participants, action }, userId) {
+async function handleGroupParticipantsUpdate(sock, { id, participants, action }, userId, helpers) {
+    const { getWaSettings } = helpers;
     const settings = await getWaSettings(userId);
     
     for (const jid of participants) {
@@ -272,7 +280,10 @@ async function handleGroupParticipantsUpdate(sock, { id, participants, action },
         let parsed = template;
         parsed = parsed.replace(/@user/g, `@${jid.split('@')[0]}`);
         parsed = parsed.replace(/@namagroup/g, groupMetadata.subject);
-        parsed = parsed.replace(/@jam/g, moment().tz('Asia/Jakarta').format('HH:mm:ss'));
+        
+        const now = new Date();
+        const timeStr = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(now).replace(/\./g, ':');
+        parsed = parsed.replace(/@jam/g, timeStr);
 
         await sock.sendMessage(id, { text: parsed, mentions: [jid] });
     }

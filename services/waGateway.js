@@ -231,7 +231,8 @@ async function startSession(userId, onQR, onConnected, onDisconnected) {
     // Handle group participants update (Welcome/Goodbye)
     sock.ev.on('group-participants.update', async (update) => {
         try {
-            await handleGroupParticipantsUpdate(sock, update, userId);
+            const helpers = { getWaSettings };
+            await handleGroupParticipantsUpdate(sock, update, userId, helpers);
         } catch (e) {
             console.error('[WA Plugins] Group Update Error:', e);
         }
@@ -252,7 +253,8 @@ async function startSession(userId, onQR, onConnected, onDisconnected) {
 
         // Execute Plugin Messages FIRST
         try {
-            const handled = await handlePluginMessage(sock, msg, userId);
+            const helpers = { getPluginData, savePluginData, redisKey, getCommands, getWaSettings };
+            const handled = await handlePluginMessage(sock, msg, userId, helpers);
             if (handled) return; // if plugin processed it, stop execution
         } catch (e) {
             console.error('[WA Plugins Error]', e);
