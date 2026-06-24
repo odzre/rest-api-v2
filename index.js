@@ -148,7 +148,7 @@ const openApiSpec = {
                     properties: { phone_number: { type: 'string', example: '8xxxxxxxxxx', description: 'Nomor HP tanpa kode negara' } }
                 }}}},
                 responses: {
-                    '200': { description: 'OTP dikirim. Response berisi otp_token dan x_uniqueid (wajib dipakai di get-token).' },
+                    '200': { description: 'OTP dikirim. Response berisi otp_token dan x_uniqueid (wajib dipakai di get-token).', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean', example: true }, message: { type: 'string', example: 'OTP berhasil dikirim' }, data: { type: 'object', properties: { otp_token: { type: 'string', example: 'xyz123' }, x_uniqueid: { type: 'string', example: 'uuid-1234' } } } } } } } },
                     '401': { description: 'API Key tidak valid' }
                 }
             }
@@ -165,7 +165,7 @@ const openApiSpec = {
                         x_uniqueid: { type: 'string', description: 'Dari response get-otp (WAJIB sama)' }
                     }
                 }}}},
-                responses: { '200': { description: 'Berhasil. Response berisi access_token dan refresh_token.' } }
+                responses: { '200': { description: 'Berhasil. Response berisi access_token dan refresh_token.', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean', example: true }, message: { type: 'string', example: 'Login berhasil' }, data: { type: 'object', properties: { access_token: { type: 'string', example: 'acc_token_abc' }, refresh_token: { type: 'string', example: 'ref_token_xyz' } } } } } } } } }
             }
         },
         '/api/v5/gopay/get-mutasi-gopaymerchant': {
@@ -182,7 +182,7 @@ const openApiSpec = {
                     }
                 }}}},
                 responses: {
-                    '200': { description: 'Data mutasi berhasil diambil. Cek token_refreshed untuk token baru.' },
+                    '200': { description: 'Data mutasi berhasil diambil. Cek token_refreshed untuk token baru.', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean', example: true }, message: { type: 'string', example: 'Mutasi berhasil diambil' }, data: { type: 'array', items: { type: 'object' } }, token_refreshed: { type: 'boolean', example: false }, new_tokens: { type: 'object' } } } } } },
                     '401': { description: 'Token expired dan refresh gagal' }
                 }
             }
@@ -201,7 +201,7 @@ const openApiSpec = {
                     }
                 }}}},
                 responses: {
-                    '200': { description: 'OTP dikirim ke nomor terdaftar.' },
+                    '200': { description: 'OTP dikirim ke nomor terdaftar.', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean', example: true }, message: { type: 'string', example: 'OTP berhasil dikirim ke nomor 081234xxx' } } } } } },
                     '401': { description: 'API Key tidak valid' }
                 }
             }
@@ -217,7 +217,7 @@ const openApiSpec = {
                         otp: { type: 'string', description: 'Kode OTP yang diterima' }
                     }
                 }}}},
-                responses: { '200': { description: 'Berhasil. Response berisi auth_token.' } }
+                responses: { '200': { description: 'Berhasil. Response berisi auth_token.', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean', example: true }, message: { type: 'string', example: 'Login berhasil' }, data: { type: 'object', properties: { auth_token: { type: 'string', example: 'auth_123456789' } } } } } } } } }
             }
         },
         '/api/v5/orderkouta/get-mutasi-orderkouta': {
@@ -232,7 +232,7 @@ const openApiSpec = {
                         page: { type: 'integer', default: 1, description: 'Halaman (default: 1)' }
                     }
                 }}}},
-                responses: { '200': { description: 'Data mutasi QRIS berhasil diambil.' } }
+                responses: { '200': { description: 'Data mutasi QRIS berhasil diambil.', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean', example: true }, message: { type: 'string', example: 'Mutasi berhasil diambil' }, data: { type: 'object' } } } } } } }
             }
         },
 
@@ -244,7 +244,31 @@ const openApiSpec = {
                 parameters: [
                     { name: 'email', in: 'query', required: true, schema: { type: 'string' }, description: 'Email akun Alight Motion pengguna' }
                 ],
-                responses: { '200': { description: 'Email terkirim, beserta instruksi.' } }
+                responses: { 
+                    '200': { 
+                        description: 'Email terkirim, beserta instruksi.',
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        success: { type: 'boolean', example: true },
+                                        message: { type: 'string', example: 'Link verifikasi berhasil dikirim.' },
+                                        data: {
+                                            type: 'object',
+                                            properties: {
+                                                email: { type: 'string', example: 'user@email.com' },
+                                                type: { type: 'string', example: 'New Member' },
+                                                usage: { type: 'string', example: '1/5' },
+                                                instruksi: { type: 'string', example: 'Cek kotak masuk atau spam email Anda. Salin link verifikasi yang diterima dari Alight Motion dan gunakan pada endpoint /verif.' }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } 
+                }
             }
         },
         '/api/v5/alight-motion/verif': {
@@ -255,7 +279,32 @@ const openApiSpec = {
                     { name: 'email', in: 'query', required: true, schema: { type: 'string' }, description: 'Email akun Alight Motion pengguna' },
                     { name: 'link', in: 'query', required: true, schema: { type: 'string' }, description: 'Link verifikasi panjang dari email' }
                 ],
-                responses: { '200': { description: 'Verifikasi berhasil dan akun premium diaktifkan.' } }
+                responses: { 
+                    '200': { 
+                        description: 'Verifikasi berhasil dan akun premium diaktifkan.',
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        success: { type: 'boolean', example: true },
+                                        message: { type: 'string', example: 'Verifikasi berhasil!' },
+                                        data: {
+                                            type: 'object',
+                                            properties: {
+                                                email: { type: 'string', example: 'user@email.com' },
+                                                type: { type: 'string', example: 'Premium Member' },
+                                                duration: { type: 'string', example: '1 Year' },
+                                                usage: { type: 'string', example: '2/5' },
+                                                instruksi: { type: 'string', example: 'Akun Anda sekarang sudah berstatus Premium. Silakan login ke aplikasi Alight Motion menggunakan email tersebut atau refresh jika sudah login.' }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } 
+                }
             }
         },
 
@@ -271,7 +320,7 @@ const openApiSpec = {
                         message: { type: 'string', example: 'Halo, ini pesan percobaan.', description: 'Isi pesan teks' }
                     }
                 }}}},
-                responses: { '200': { description: 'Pesan berhasil dikirim.' }, '400': { description: 'Gagal mengirim pesan atau nomor tidak valid.' } }
+                responses: { '200': { description: 'Pesan berhasil dikirim.', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean', example: true }, message: { type: 'string', example: 'Pesan berhasil dikirim.' }, data: { type: 'object' } } } } } }, '400': { description: 'Gagal mengirim pesan atau nomor tidak valid.' } }
             }
         },
 
@@ -324,7 +373,7 @@ const openApiSpec = {
                     }
                 }}}},
                 responses: {
-                    '200': { description: 'Order berhasil dibuat, response berisi reffid dan QRIS' },
+                    '200': { description: 'Order berhasil dibuat, response berisi reffid dan QRIS', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean', example: true }, message: { type: 'string', example: 'Order dibuat.' }, data: { type: 'object', properties: { reffid: { type: 'string', example: 'ODZRE-A3F7K9B2X1M4' }, nominal: { type: 'integer', example: 50000 }, qris_url: { type: 'string', example: 'https://...' }, qris_string: { type: 'string', example: '000201010211...' }, expires_at: { type: 'string', format: 'date-time' } } } } } } } },
                     '400': { description: 'Parameter tidak lengkap' }
                 }
             }
@@ -337,7 +386,7 @@ const openApiSpec = {
                     { name: 'reffid', in: 'query', required: true, schema: { type: 'string' }, description: 'Reffid dari response order-orkut', example: 'ODZRE-A3F7K9B2X1M4' }
                 ],
                 responses: {
-                    '200': { description: 'Status order ditemukan' },
+                    '200': { description: 'Status order ditemukan', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean', example: true }, message: { type: 'string', example: 'Status order ditemukan' }, data: { type: 'object', properties: { reffid: { type: 'string', example: 'ODZRE-A3F7K9B2X1M4' }, nominal: { type: 'integer', example: 50000 }, status: { type: 'string', example: 'PENDING' }, type: { type: 'string', example: 'ORDERKOUTA' } } } } } } } },
                     '404': { description: 'Order tidak ditemukan' }
                 }
             }
@@ -361,7 +410,7 @@ const openApiSpec = {
                     }
                 }}}},
                 responses: {
-                    '200': { description: 'Order berhasil dibuat' },
+                    '200': { description: 'Order berhasil dibuat', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean', example: true }, message: { type: 'string', example: 'Order dibuat.' }, data: { type: 'object', properties: { reffid: { type: 'string', example: 'GOPAY-A3F7K9B2X1M4' }, nominal: { type: 'integer', example: 50000 }, qris_url: { type: 'string', example: 'https://...' }, qris_string: { type: 'string', example: '000201010211...' }, expires_at: { type: 'string', format: 'date-time' } } } } } } } },
                     '400': { description: 'Parameter tidak lengkap' }
                 }
             }
@@ -374,7 +423,7 @@ const openApiSpec = {
                     { name: 'reffid', in: 'query', required: true, schema: { type: 'string' }, description: 'Reffid dari response order-gomerchant', example: 'ODZRE-A3F7K9B2X1M4' }
                 ],
                 responses: {
-                    '200': { description: 'Status order ditemukan' },
+                    '200': { description: 'Status order ditemukan', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean', example: true }, message: { type: 'string', example: 'Status order ditemukan' }, data: { type: 'object', properties: { reffid: { type: 'string', example: 'GOPAY-A3F7K9B2X1M4' }, nominal: { type: 'integer', example: 50000 }, status: { type: 'string', example: 'PENDING' }, type: { type: 'string', example: 'GOMERCHANT' } } } } } } } },
                     '404': { description: 'Order tidak ditemukan' }
                 }
             }
