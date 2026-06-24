@@ -54,9 +54,8 @@ app.get('/api/public/live-stats', async (req, res) => {
         const total = await db.getOne(
             "SELECT COUNT(*) as total_count FROM request_logs"
         );
-        const dateKey = `volume_${new Date().toISOString().split('T')[0]}`;
         const dailyVolRow = await db.getOne(
-            "SELECT `value` FROM settings WHERE `key` = ?", [dateKey]
+            "SELECT `value` FROM settings WHERE `key` = 'global_transaction_volume'"
         );
         res.json({
             success: true,
